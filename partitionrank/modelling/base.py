@@ -24,7 +24,7 @@ class LLMRanker:
     
     def logic(self, texts : List[str]):
         inputs = self.tokenizer(texts)
-        inputs = map(lambda x : {k: torch.tensor(v).to(self.device) for k, v in x.items()}, inputs)
+        inputs = {k: torch.tensor(v).to(self.device) for k, v in inputs.items()}
         texts = self.model.generate(**inputs, generation_config=self.generation_config)
         if self._llm.config.is_encoder_decoder: output_ids = output_ids[0]
         else: output_ids = output_ids[0][len(inputs["input_ids"][0]):]

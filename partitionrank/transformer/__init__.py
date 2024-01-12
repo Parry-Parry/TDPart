@@ -6,7 +6,14 @@ if not pt.started(): pt.init()
 from abc import ABC
 
 class ListWiseTransformer(pt.Transformer, ABC):
-    def __init__(self, partition_type : str) -> None:
+    def __init__(self, partition_type : str, stride : int = 10, window : int = 20) -> None:
         super().__init__()
+        self.partition_type = partition_type
+        self.stride = stride
+        self.window = window
     
     def sliding_window():
+        raise NotImplementedError
+
+    def pivot():
+        raise NotImplementedError
