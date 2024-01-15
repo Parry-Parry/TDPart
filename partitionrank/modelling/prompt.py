@@ -16,14 +16,12 @@ class RankPrompt(Link):
                  pre : str, 
                  post : str, 
                  model : str, 
-                 max_length : int = 200, 
-                 context_size: int = 4096) -> None:
+                 max_length : int = 200) -> None:
         super().__init__(name='RankPrompt')
         self.model = model
-        self.context_size = context_size
         template = get_conversation_template(model)
         self.prompt = '\n'.join([template, pre, '{documents}', post])
         self.formatter = DocumentFormatter(max_length)
     
-    def logic(self, query : List[str], texts : List[List[str]]) -> Any:
-        return [self.prompt.format(query=query, documents=self.formatter(texts), num=len(texts)) for query, texts in zip(query, texts)]
+    def logic(self, query : str, texts : List[str]) -> Any:
+        return self.prompt.format(query=query, documents=self.formatter(texts), num=len(texts))
