@@ -13,15 +13,20 @@ class DocumentFormatter(Link):
 
 class RankPrompt(Link):
     def __init__(self, 
-                 pre : str, 
-                 post : str, 
-                 model : str, 
+                 components : List[str],
+                 doc_formatter : bool = False,
+                 model : str = None,
                  max_length : int = 200) -> None:
         super().__init__(name='RankPrompt')
-        self.model = model
-        template = get_conversation_template(model)
-        self.prompt = '\n'.join([template, pre, '{documents}', post])
+        if model:
+            template = get_conversation_template(model) 
+            self.prompt = '\n'.join([template, *components])
+        else: self.prompt = '\n'.join(components)
         self.formatter = DocumentFormatter(max_length)
+        self.use_formatter = doc_formatter
     
-    def logic(self, query : str, texts : List[str]) -> Any:
-        return self.prompt.format(query=query, documents=self.formatter(texts), num=len(texts))
+    def logic(self, **kwargs) -> Any:
+        if self.use_formatter:
+            texts = kwargs.pop('texts')
+            kwargs['documents'] = self.formatter(texts)
+        return self.prompt.format(**kwargs)

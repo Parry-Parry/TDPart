@@ -1,9 +1,7 @@
 import pandas as pd
 import pyterrier as pt 
 if not pt.started(): pt.init()
-from partitionrank.modelling.base import LLMRanker
-from partitionrank.modelling.prompt import RankPrompt
-from abc import ABC
+from abc import ABC, abstractmethod
 
 class ListWiseTransformer(pt.Transformer, ABC):
 
@@ -14,9 +12,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
     CONTEXT_LENGTH = 4096
 
     def __init__(self, 
-                 partition_type : str, 
-                 checkpoint : str, 
-                 n_gpu : int = None, 
+                 partition_type : str,  
                  stride : int = 10, 
                  window : int = 20, 
                  depth : int = 100, 
@@ -30,28 +26,18 @@ class ListWiseTransformer(pt.Transformer, ABC):
         self.depth = depth
         self.shuffle = shuffle
 
-        self.chain = RankPrompt(self.PRE, self.POST, self.MODEL_TYPE, self.MAX_LENGTH, self.CONTEXT_LENGTH) >> LLMRanker(checkpoint, n_gpu=n_gpu)
-
         self.process = {
             'sliding': self.sliding_window,
             'pivot': self.pivot
         }[mode]
-
+    
+    @abstractmethod
     def score(self, subset : pd.DataFrame, start : int):
-        query = subset['query'].iloc[0]
-        texts = current['text'].tolist()
-        order = self.chain(query, texts)
-        
-        assert len(order) == len(texts)
-        
-        current = current.iloc[order].reset_index(drop=True)
-        current['score'] = [1/(start+i) for i in range(len(current))]
-        return current
+        raise NotImplementedError
     
     def sliding_window(self, subset : pd.DataFrame):
         in_token, out_token = 0, 0
         subset = subset.sort_values('score', ascending=False).reset_index(drop=True).iloc[:self.depth] # get top k
-        query = subset['query'].iloc[0]
         if self.shuffle: subset = subset.sample(frac=1).reset_index(drop=True) # shuffle
         subset['score'] = [1/(i+1) for i in range(len(subset))] # set initial score
 
@@ -68,7 +54,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
 
         return subset, in_token, out_token             
 
-    def pivot(self, query : str, texts : list):
+    def pivot(self, subset : pd.DataFrame):
         in_token, out_token = 0, 0
         subset = subset.sort_values('score', ascending=False).reset_index(drop=True).iloc[:self.depth]
         if self.shuffle: subset = subset.sample(frac=1).reset_index(drop=True)
@@ -80,10 +66,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
         # sort initial to get pivot point 
 
         current = subset.iloc[start:end].copy()
-        query = current['query'].iloc[0]
-        texts = current['text'].tolist()
-        scores = self.chain(query, texts)
-        assert len(scores) == len(texts)
+        scores = self.score(current, start)
         current = current.iloc[scores[::-1]].reset_index(drop=True)
         current['score'] = [1/(start+i) for i in range(len(current))]
 
@@ -99,22 +82,13 @@ class ListWiseTransformer(pt.Transformer, ABC):
 
             current = subset.iloc[start:end-1].copy()
             current.append(pivot)
-            query = current['query'].iloc[0]
-            texts = current['text'].tolist()
-            scores = self.chain(query, texts)
-            assert len(scores) == len(texts)
+            scores = self.score(current, start)
             current = current.iloc[scores[::-1]].reset_index(drop=True)
             # get index of pivot doc id
             pivot_index = subset[subset['docid'] == pivot['docid']].index[0]
             more_rel = current.iloc[:pivot_index]
             more_rel.append(pivot)
-
             candidates = pd.concat([candidates.iloc[:-1], more_rel], ignore_index=True)
-
-            
-
-
-        
 
     def transform(self, topics_or_res: pd.DataFrame) -> pd.DataFrame:
         in_token, out_token = 0, 0
