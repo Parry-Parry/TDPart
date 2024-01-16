@@ -26,7 +26,7 @@ def load_splade(checkpoint : str = 'naver/splade-cocondenser-ensembledistil', ba
 
     index = PisaIndex(index, threads=4).quantized()
     splade = SpladeFactory(checkpoint)
-    return splade.query_encoder(batch_size=batch_size) >> index.quantized()
+    return splade.query_encoder(batch_size=batch_size) >> index
 
 def load_bm25(index : str = 'msmarco_passage', **kwargs):
     import pyterrier as pt 
