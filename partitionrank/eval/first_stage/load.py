@@ -23,7 +23,7 @@ def load_splade(checkpoint : str = 'naver/splade-cocondenser-ensembledistil', ba
     if not pt.started(): pt.init()
     from pyt_splade import SpladeFactory
 
-    index = pt.IndexFactory.of(pt.get_dataset(index).get_index(), memory=True)
+    index = pt.IndexFactory.of(pt.get_dataset(index).get_index('terrier_stemmed'), memory=True)
     splade = SpladeFactory(checkpoint)
     return splade.query_encoder(matchop=True, batch_size=batch_size) >> pt.BatchRetrieve(index, wmodel='Tf')
 
@@ -31,7 +31,7 @@ def load_bm25(index : str = 'msmarco_passage', **kwargs):
     import pyterrier as pt 
     if not pt.started(): pt.init()
 
-    index = pt.IndexFactory.of(pt.get_dataset(index).get_index(), memory=True)
+    index = pt.IndexFactory.of(pt.get_dataset(index).get_index('terrier_stemmed'), memory=True)
     return pt.BatchRetrieve(index, wmodel='BM25')
 
 LOAD_FUNCS = {
