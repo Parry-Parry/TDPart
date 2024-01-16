@@ -59,48 +59,11 @@ class LiT5(pt.Transformer):
         output = list({x: 0 for x in output if 0 <= x < window_len}.keys()) # remove duplicates (but keep order) and remove anything out of range
         order = output + [i for i in range(window_len) if i not in output] # backfill missing passages
         return np.array(order)
-
-    def pivot_old(self, query : str, query_results : pd.DataFrame):
-        query_results = query_results.sort_values('score', ascending=False)
-        doc_idx = query_results['docno'].to_numpy()
-        doc_texts = query_results['text'].to_numpy()
-        '''
-        PIVOT ALGO: 
-        Sort top-k docs using model
-        take pivot and find all candidates more relevant than pivot down to depth
-        find new pivot 
-        repeat
-        '''
-        pivot_id, pivot_text = None, None
-        candidate_idxs, candidate_texts = [], []
-
-        total_num = self.passes * self.window_size
-
-        for start_idx, end_idx, window_len in _iter_windows(total_num, self.window_size, self.stride):
-            if pivot_id:
-                _tmp = [pivot_text] + doc_texts[start_idx+1:end_idx].to_list()
-                _tmp_idx = [pivot_id] + doc_idx[start_idx+1:end_idx].to_list()
-                order = self.score(query, _tmp, start_idx, end_idx, window_len)
-                _tmp_idx = np.array(_tmp_idx)[order]
-                _tmp_text = np.array(_tmp)[order]
-                idx = _tmp_idx.index(pivot_id)
-                candidate_idxs.extend(_tmp_idx[:idx])
-                candidate_texts.extend(_tmp_text[:idx])
-            else:
-                orig_idxs, new_idxs = self.score(query, doc_texts[start_idx:end_idx].to_list(), start_idx, end_idx, window_len)
-                doc_idx[orig_idxs] = doc_idx[new_idxs]
-                doc_texts[orig_idxs] = doc_texts[new_idxs]
-
-                pivot_id = doc_idx[new_idxs[-1]]
-                pivot_text = doc_texts[new_idxs[-1]]
-
-                candidate_idxs.extend(doc_idx[new_idxs[:-1]])
-                candidate_texts.extend(doc_texts[new_idxs[:-1]])
     
     def _reset_budget(self):
         self.budget = self.max_budget
 
-    def _pivot(self, query : str, doc_idx : List[str], doc_texts : List[str]):
+    def _pivot(self, query : str, doc_idx : List[str], doc_texts : List[str], allocation : int = 0):
         end_idx = min(self.window_size, len(doc_texts))
         window_len = end_idx
 
@@ -111,7 +74,7 @@ class LiT5(pt.Transformer):
         * take pivot as last element in sorted list
         '''
 
-        order = self.score(query, doc_texts[:end_idx].to_list(), 0, end_idx, window_len)
+        order = self.score(query, doc_texts[:end_idx], 0, end_idx, window_len)
         orig_idxs = np.arange(end_idx)
         doc_idx[orig_idxs] = doc_idx[order]
         doc_texts[orig_idxs] = doc_texts[order]
@@ -129,26 +92,16 @@ class LiT5(pt.Transformer):
 
         * get next partition
         * sort partition using model
-        * find pivot in sorted partitionor _ in range(self.passes):
+        * find pivot in sorted partition
         * add candidates to list
         '''
 
-        for _ in range(self.passes):
-            if not doc_texts:
-                break
+        for _ in range(allocation - 1):
+            if not doc_texts: break
             end_idx = min(self.window_size - 1, len(doc_texts))
             window_len = end_idx + 1
             _texts = [pivot_text] + doc_texts[:end_idx].to_list() # get next partition
             _idx = [pivot_id] + doc_idx[:end_idx].to_list()
-            doc_idx = doc_idx[end_idx:] # pop processed docs
-            doc_texts = doc_texts[end_idx:]
-
-            if not doc_texts: # empty
-                break
-            end_idx = min(self.window_size - 1, len(doc_texts))
-            window_len = end_idx + 1
-            _texts = [pivot_text] + doc_texts[:end_idx].to_list() # get next partition
-            _idx = [pivot_id] + doc_idx[:end_idx].to_list() 
             doc_idx = doc_idx[end_idx:] # pop processed docs
             doc_texts = doc_texts[end_idx:]
 
@@ -170,17 +123,19 @@ class LiT5(pt.Transformer):
         doc_idx = query_results['docno'].to_numpy()
         doc_texts = query_results['text'].to_numpy()
 
+        first_allocation = self.budget // 2
         candidate_idxs, candidate_texts, filler_idx, filler_texts = self._pivot(query, doc_idx, doc_texts)
+        self.budget -= first_allocation
+        core_idxs, core_texts, sub_filler_idx, sub_filler_texts = self._pivot(query, candidate_idxs, candidate_texts, self.budget)
 
-        core_idxs, core_texts, sub_filler_idx, sub_filler_texts = self._pivot(query, candidate_idxs, candidate_texts)
+        sub_filler_idx.extend(filler_idx)
+        sub_filler_texts.extend(filler_texts)
 
-        
+        core_idxs.extend(sub_filler_idx)
+        core_texts.extend(sub_filler_texts)
 
-        candidate_idxs.extend(filler_idx)
-        candidate_texts.extend(filler_texts)
-
-        return candidate_idxs, candidate_texts
-
+        return core_idxs, core_texts
+    
     def sliding_window(self, query : str, query_results : pd.DataFrame):
         query_results = query_results.sort_values('score', ascending=False)
         doc_idx = query_results['docno'].to_numpy()
@@ -204,6 +159,7 @@ class LiT5(pt.Transformer):
         }
         with torch.no_grad():
             for (qid, query), query_results in tqdm(inp.groupby(['qid', 'query']), unit='q'):
+                self._reset_budget()
                 doc_idx, doc_texts = self.process(query, query_results)
                 res['qid'].extend([qid] * len(doc_idx))
                 res['query'].extend([query] * len(doc_idx))
