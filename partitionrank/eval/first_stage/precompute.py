@@ -23,7 +23,7 @@ def precompute(config : str):
         model = model >> pt.text.get_text(text_ref, 'text') >> second_stage
     
     eval_set = irds.load(eval_set)
-    topics = pd.DataFrame(eval_set.queries_iter())
+    topics = pd.DataFrame(eval_set.queries_iter()).rename(columns={'query_id': 'qid', 'text': 'query'})
 
     res = model.transform(topics)
     write_results(res, out_file)
