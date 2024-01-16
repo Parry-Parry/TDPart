@@ -1,10 +1,10 @@
 
-def load_monot5(checkpoint=None, batch_size : int = 64, **kwargs):
+def load_monot5(checkpoint : str ='castorini/monot5-base-msmarco', batch_size : int = 64, **kwargs):
     from pyterrier_t5 import MonoT5ReRanker 
 
     return MonoT5ReRanker(model=checkpoint, batch_size=batch_size)
 
-def load_bi_encoder(checkpoint=None, batch_size : int = 64, **kwargs):
+def load_bi_encoder(checkpoint : str ='sebastian-hofstaetter/distilbert-dot-tas_b-b256-msmarco', batch_size : int = 64, **kwargs):
     from transformers import AutoModel, AutoTokenizer
     from pyterrier_dr import HgfBiEncoder, BiScorer
 
@@ -13,7 +13,12 @@ def load_bi_encoder(checkpoint=None, batch_size : int = 64, **kwargs):
     backbone = HgfBiEncoder(model, tokenizer, {}, device=model.device)
     return BiScorer(backbone, batch_size=batch_size)
 
-def load_splade(checkpoint=None, batch_size : int = 128, index : str = 'msmarco_passage', **kwargs):
+def load_electra(checkpoint : str ='crystina-z/monoELECTRA_LCE_nneg31', batch_size : int = 64, **kwargs):
+    from pyterrier_dr import ElectraScorer
+
+    return ElectraScorer(model_name=checkpoint, batch_size=batch_size)
+
+def load_splade(checkpoint : str = 'naver/splade-cocondenser-ensembledistil', batch_size : int = 128, index : str = 'msmarco_passage', **kwargs):
     import pyterrier as pt 
     if not pt.started(): pt.init()
     from pyt_splade import SpladeFactory
@@ -32,6 +37,7 @@ def load_bm25(index : str = 'msmarco_passage', **kwargs):
 LOAD_FUNCS = {
     'monot5': load_monot5,
     'bi_encoder': load_bi_encoder,
+    'electra': load_electra,
     'splade': load_splade,
     'bm25': load_bm25
 }
