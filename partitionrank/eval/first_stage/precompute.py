@@ -15,7 +15,8 @@ def precompute(config : str):
     out_file = config.pop('out_file')
     topk = config.pop('topk', 100)
 
-    model = LOAD_FUNCS[first_stage['model']](**first_stage['kwargs']) % topk
+    kwargs = first_stage.pop('kwargs', {})
+    model = LOAD_FUNCS[first_stage['model']](**kwargs) % topk
 
     if second_stage:
         text_ref = pt.get_dataset(config.pop('text_ref'))
