@@ -24,7 +24,7 @@ def load_splade(checkpoint : str = 'naver/splade-cocondenser-ensembledistil', ba
     from pyt_splade import SpladeFactory
     from pyterrier_pisa import PisaIndex
 
-    index = PisaIndex(index, num_threads=4).quantized()
+    index = PisaIndex(index, threads=4).quantized()
     splade = SpladeFactory(checkpoint)
     return splade.query_encoder(batch_size=batch_size) >> index.quantized()
 
