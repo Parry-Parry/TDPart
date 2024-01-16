@@ -20,7 +20,7 @@ def _iter_windows(n, window_size, stride):
 
 class LiT5(pt.Transformer):
     template = "Search Query: {q} Passage: [{i}] {d} Relevance Ranking: "
-    def __init__(self, model_path='castorini/LiT5-Distill-large', batch_size=16, verbose=True, bfloat16=None, window_size=20, stride=10, passes=1, mode='sliding'):
+    def __init__(self, model_path='castorini/LiT5-Distill-large', batch_size=16, verbose=True, bfloat16=None, window_size=20, stride=10, budget=1, mode='sliding'):
         self.tokenizer = T5Tokenizer.from_pretrained(model_path, return_dict=False, legacy=False, use_fast=True)
         self.model = FiD.from_pretrained(model_path, from_flax=False).cuda().eval()
         self.model.encoder.config.n_passages = window_size
@@ -34,7 +34,8 @@ class LiT5(pt.Transformer):
         elif bfloat16:
             self.model = self.model.bfloat16()
         self.bfloat16 = bfloat16
-        self.passes = passes
+        self.max_budget = budget
+        self.budget = budget
         self.window_size = window_size
         self.stride = stride
 
@@ -96,10 +97,12 @@ class LiT5(pt.Transformer):
                 candidate_idxs.extend(doc_idx[new_idxs[:-1]])
                 candidate_texts.extend(doc_texts[new_idxs[:-1]])
     
-    def pivot(self, query : str, query_results : pd.DataFrame):
-        query_results = query_results.sort_values('score', ascending=False)
-        doc_idx = query_results['docno'].to_numpy()
-        doc_texts = query_results['text'].to_numpy()
+    def _reset_budget(self):
+        self.budget = self.max_budget
+
+    def _pivot(self, query : str, doc_idx : List[str], doc_texts : List[str]):
+        end_idx = min(self.window_size, len(doc_texts))
+        window_len = end_idx
 
         '''
         -- GET PIVOT --
@@ -107,9 +110,6 @@ class LiT5(pt.Transformer):
         * sort top-k docs using model
         * take pivot as last element in sorted list
         '''
-
-        end_idx = min(self.window_size, len(doc_texts))
-        window_len = end_idx
 
         order = self.score(query, doc_texts[:end_idx].to_list(), 0, end_idx, window_len)
         orig_idxs = np.arange(end_idx)
@@ -129,11 +129,20 @@ class LiT5(pt.Transformer):
 
         * get next partition
         * sort partition using model
-        * find pivot in sorted partition
+        * find pivot in sorted partitionor _ in range(self.passes):
         * add candidates to list
         '''
-        
+
         for _ in range(self.passes):
+            if not doc_texts:
+                break
+            end_idx = min(self.window_size - 1, len(doc_texts))
+            window_len = end_idx + 1
+            _texts = [pivot_text] + doc_texts[:end_idx].to_list() # get next partition
+            _idx = [pivot_id] + doc_idx[:end_idx].to_list()
+            doc_idx = doc_idx[end_idx:] # pop processed docs
+            doc_texts = doc_texts[end_idx:]
+
             if not doc_texts: # empty
                 break
             end_idx = min(self.window_size - 1, len(doc_texts))
@@ -152,18 +161,20 @@ class LiT5(pt.Transformer):
             candidate_texts.extend(_texts[:id])
             filler_idx.extend(_idx[id+1:])
             filler_texts.extend(_texts[id+1:])
-
-        candidate_idxs.append(pivot_id) # add pivot
-        candidate_texts.append(pivot_text)
         
-        '''
-        -- PROCESS CANDIDATES --
+        return candidate_idxs, candidate_texts, filler_idx, filler_texts
+        
 
-        * sort candidates using model
-        * backfill missing passages
+    def pivot(self, query : str, query_results : pd.DataFrame):
+        query_results = query_results.sort_values('score', ascending=False)
+        doc_idx = query_results['docno'].to_numpy()
+        doc_texts = query_results['text'].to_numpy()
 
-        ???
-        '''
+        candidate_idxs, candidate_texts, filler_idx, filler_texts = self._pivot(query, doc_idx, doc_texts)
+
+        core_idxs, core_texts, sub_filler_idx, sub_filler_texts = self._pivot(query, candidate_idxs, candidate_texts)
+
+        
 
         candidate_idxs.extend(filler_idx)
         candidate_texts.extend(filler_texts)
@@ -183,7 +194,7 @@ class LiT5(pt.Transformer):
                 doc_texts[orig_idxs] = doc_texts[new_idxs]
         return doc_idx, doc_texts
 
-    def transform(self, inp):
+    def transform(self, inp : pd.DataFrame):
         res = {
             'qid': [],
             'query': [],
