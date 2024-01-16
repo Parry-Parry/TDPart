@@ -21,10 +21,10 @@ def load_electra(checkpoint : str ='crystina-z/monoELECTRA_LCE_nneg31', batch_si
 def load_splade(checkpoint : str = 'naver/splade-cocondenser-ensembledistil', batch_size : int = 128, index : str = 'msmarco_passage', **kwargs):
     import pyterrier as pt 
     if not pt.started(): pt.init()
-    from pyt_splade import SpladeFactory
+    from pyt_splade import Splade
 
     index = pt.IndexFactory.of(pt.get_dataset(index).get_index('terrier_stemmed'), memory=True)
-    splade = SpladeFactory(checkpoint)
+    splade = Splade(checkpoint)
     return splade.query_encoder(matchop=True, batch_size=batch_size) >> pt.BatchRetrieve(index, wmodel='Tf')
 
 def load_bm25(index : str = 'msmarco_passage', **kwargs):
