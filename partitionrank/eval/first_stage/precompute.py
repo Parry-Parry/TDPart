@@ -1,7 +1,7 @@
 import pyterrier as pt 
 if not pt.started(): pt.init()
 from pyterrier.io import write_results
-from utility import load_yaml
+from utility import load_yaml, clean
 from partitionrank.eval.first_stage.load import LOAD_FUNCS
 import ir_datasets as irds
 import pandas as pd
@@ -26,6 +26,7 @@ def precompute(config : str):
     
     eval_set = irds.load(eval_set)
     topics = pd.DataFrame(eval_set.queries_iter()).rename(columns={'query_id': 'qid', 'text': 'query'})
+    topics['query'] = topics['query'].apply(clean)
 
     res = model.transform(topics)
     write_results(res, out_file)
