@@ -137,12 +137,16 @@ class ListWiseTransformer(pt.Transformer, ABC):
     def _second(self, qid : str, query : str, doc_idx : List[str], doc_texts : List[str]):
         indicator = False
         num_iters = 0
+        c_idx, c_text = doc_idx, doc_texts
+        f_idx, f_text = [], []
         while not indicator and num_iters < self.max_iters:
             num_iters += 1
-            c_idx, c_text, b_idx, b_text, indicator = self._first(qid, query, doc_idx, doc_texts)
+            c_idx, c_text, b_idx, b_text, indicator = self._first(qid, query, c_idx, c_text)
+            f_idx = np.concatenate([f_idx, b_idx])
+            f_text = np.concatenate([f_text, b_text])
         if num_iters == self.max_iters:
             print(f"WARNING: max_iters reached for query {qid}")
-        return np.concatenate([c_idx, b_idx]), np.concatenate([c_text, b_text])
+        return np.concatenate([c_idx, f_idx]), np.concatenate([c_text, f_text])
     
     def pivot(self, query : str, query_results : pd.DataFrame):
         qid = query_results['qid'].iloc[0]
