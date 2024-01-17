@@ -31,7 +31,7 @@ class LiT5(ListWiseTransformer):
         # get number of tokens in batch
         self.current_query.in_tokens += inputs['input_ids'].view(-1).shape[0]
         outputs = self.model.generate(
-            input_idx=inputs['input_ids'].cuda().reshape(1, -1),
+            input_ids=inputs['input_ids'].cuda().reshape(1, -1),
             attention_mask=inputs['attention_mask'].cuda().reshape(1, -1),
             max_length=100,
             do_sample=False,
