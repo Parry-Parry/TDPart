@@ -15,8 +15,13 @@ def score_oracle(config : str):
     qrels = config['qrels']
     ds = irds.load(qrels)
     qrels = pd.DataFrame(ds.qrels_iter())
+
+    window_size = config['window_size']
+    buffer = config.pop('buffer', 20)
+    stride = config['stride']
+    mode = config['mode']
     
-    model = OracleTransformer(qrels, mode=mode)
+    model = OracleTransformer(qrels, mode=mode, window_size=window_size, buffer=buffer, stride=stride)
     res = model.transform(topics_or_res)
 
     write_results(res, output_path)

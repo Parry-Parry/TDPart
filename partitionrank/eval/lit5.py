@@ -2,7 +2,7 @@ import pyterrier as pt
 if not pt.started(): pt.init()
 from pyterrier.io import read_results, write_results
 from utility import load_yaml
-from partitionrank.transformer.lit_t5 import LitT5
+from partitionrank.transformer.lit_t5 import LiT5
 from fire import Fire
 
 def score_lit_t5(config : str):
@@ -12,11 +12,11 @@ def score_lit_t5(config : str):
     output_path = config['output_path']
 
     window_size = config['window_size']
-    passes = config['passes']
+    buffer = config.pop('buffer', 20)
     stride = config['stride']
     mode = config['mode']
     
-    model = LitT5(model_path=config['checkpoint'], mode=mode, window_size=window_size, passes=passes, stride=stride)
+    model = LiT5(model_path=config['checkpoint'], mode=mode, window_size=window_size, buffer=buffer, stride=stride)
     model = pt.text.get_text(dataset, "text") >> model
 
     res = model.transform(topics_or_res)

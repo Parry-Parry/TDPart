@@ -1,20 +1,20 @@
+from collections import defaultdict
 from typing import List
 import numpy as np
 import pandas as pd
 import pyterrier as pt 
 if not pt.started(): pt.init()
 from tqdm.auto import tqdm
-from .lit_t5 import _iter_windows
+from .lit_t5 import _iter_windows, _split
 
 class OracleTransformer(pt.Transformer):
-    def __init__(self, qrels : pd.DataFrame, window_size=20, stride=10, budget=1, depth : int = None, mode = 'sliding') -> None:
+    def __init__(self, qrels : pd.DataFrame, window_size=20, stride=10, buffer : int = 20, mode = 'sliding') -> None:
         super().__init__()
         self.qrels = qrels
 
         self.window_size = window_size  
         self.stride = stride
-        self.max_budget = budget if not depth else (depth / stride) - 1
-        self.budget = budget
+        self.buffer = buffer
 
         self.process = {
             'sliding': self.sliding_window,
@@ -23,66 +23,58 @@ class OracleTransformer(pt.Transformer):
     
     def score(self, qid, doc_idx):
         q_rels = self.qrels[self.qrels['qid'] == qid].set_index('docno').relevance.to_dict()
+        q_rels = defaultdict(lambda: 0, q_rels)
+        
         doc_rel = [q_rels[i] for i in doc_idx]
         order = sorted(range(len(doc_rel)), key=lambda k: doc_rel[k], reverse=True)
         return order
-    
-    def _reset_budget(self):
-        self.budget = self.max_budget
 
-    def _pivot(self, query : str, doc_idx : List[str], doc_texts : List[str], allocation : int = 0):
-        end_idx = min(self.window_size, len(doc_texts))
-        window_len = end_idx
-
+    def _pivot(self, query : str, doc_idx : List[str], doc_texts : List[str]):
         '''
-        -- GET PIVOT --
-
-        * sort top-k docs using model
-        * take pivot as last element in sorted list
+        l : current left partition being scored
+        r : current right partition being the remainder of the array
+        c : current candidates
+        b : current backfill
+        p : current pivot
         '''
+        l_text, l_idx = doc_texts[:self.window_size], doc_idx[:self.window_size]
+        r_text, r_idx = doc_texts[self.window_size:], doc_idx[self.window_size:]
 
-        order = self.score(query, doc_texts[:end_idx], 0, end_idx, window_len)
-        orig_idxs = np.arange(end_idx)
-        doc_idx[orig_idxs] = doc_idx[order]
-        doc_texts[orig_idxs] = doc_texts[order]
-        pivot_id = doc_idx[order[-1]]
-        pivot_text = doc_texts[order[-1]]
+        order = self.score(query, l_text, 0, self.window_size, self.window_size)
+        orig_idxs = np.arange(self.window_size)
+        l_text[orig_idxs], l_idx[orig_idxs] = l_text[order], l_idx[order]
 
-        candidate_texts = doc_texts[:window_len-1].to_list() # add top-k-1 docs to candidates
-        candidate_idxs = doc_idx[:window_len-1].to_list()
-        filler_idx, filler_texts = [], [] # store for backfilling
-        doc_idx = doc_idx[end_idx:] # pop processed docs
-        doc_texts = doc_texts[end_idx:]
+        p_id, p_text = doc_idx[order[9]], doc_texts[order[9]]
+        c_text = np.concatenate([l_text[:9],l_text[10:self.window_size]])
+        c_idx = np.concatenate([l_idx[:9],l_idx[10:self.window_size]])
 
-        '''
-        -- GET CANDIDATES --
+        b_text, b_idx = [], []
+        sub_window_size = self.window_size - 1
 
-        * get next partition
-        * sort partition using model
-        * find pivot in sorted partition
-        * add candidates to list
-        '''
+        cutoff = len(r_text) % sub_window_size
+        r_text, r_idx = r_text[:-cutoff], r_idx[:-cutoff]
 
-        for _ in range(allocation - 1):
-            if not doc_texts: break
-            end_idx = min(self.window_size - 1, len(doc_texts))
-            window_len = end_idx + 1
-            _texts = [pivot_text] + doc_texts[:end_idx].to_list() # get next partition
-            _idx = [pivot_id] + doc_idx[:end_idx].to_list()
-            doc_idx = doc_idx[end_idx:] # pop processed docs
-            doc_texts = doc_texts[end_idx:]
+        while len(c_text) < self.buffer and len(r_text) > 0:
+            l_text, r_text = _split(r_text, sub_window_size)
+            l_idx, r_idx = _split(r_idx, sub_window_size)
 
-            order = self.score(query, _texts, 0, end_idx, window_len) 
-            _idx = np.array(_idx)[order]
-            _texts = np.array(_texts)[order]
+            # prepend pivot to left partition
+            l_text = np.concatenate([[p_text], l_text])
+            l_idx = np.concatenate([[p_id], l_idx])
 
-            id = _idx.index(pivot_id) # find pivot
-            candidate_idxs.extend(_idx[:id]) # add candidates
-            candidate_texts.extend(_texts[:id])
-            filler_idx.extend(_idx[id+1:])
-            filler_texts.extend(_texts[id+1:])
+            order = self.score(query, l_text, 0, self.window_size, self.window_size)
+            orig_idxs = np.arange(self.window_size)
+            l_text[orig_idxs], l_idx[orig_idxs] = l_text[order], l_idx[order]
+
+            # find index of pivot id
+            p_idx = np.where(l_idx == p_id)[0][0]
+            # add left of pivot to candidates and right of pivot to backfill
+            c_text = np.concatenate([c_text, l_text[:p_idx]])
+            c_idx = np.concatenate([c_idx, l_idx[:p_idx]])
+            b_text = np.concatenate([b_text, l_text[p_idx+1:]])
+            b_idx = np.concatenate([b_idx, l_idx[p_idx+1:]])
         
-        return candidate_idxs, candidate_texts, filler_idx, filler_texts
+        return c_idx[:self.buffer], c_text[:self.buffer], b_idx, b_text
         
 
     def pivot(self, query : str, query_results : pd.DataFrame):
@@ -90,18 +82,13 @@ class OracleTransformer(pt.Transformer):
         doc_idx = query_results['docno'].to_numpy()
         doc_texts = query_results['text'].to_numpy()
 
-        first_allocation = self.budget // 2
-        candidate_idxs, candidate_texts, filler_idx, filler_texts = self._pivot(query, doc_idx, doc_texts)
-        self.budget -= first_allocation
-        core_idxs, core_texts, sub_filler_idx, sub_filler_texts = self._pivot(query, candidate_idxs, candidate_texts, self.budget)
+        c_idx, c_text, f_idx, f_text = self._pivot(query, doc_idx, doc_texts)
+        c_idx, c_text, b_idx, b_text = self._pivot(query, c_idx, c_text)
 
-        sub_filler_idx.extend(filler_idx)
-        sub_filler_texts.extend(filler_texts)
+        c_idx = np.concatenate([c_idx, b_idx, f_idx])
+        c_text = np.concatenate([c_text, b_text, f_text])
 
-        core_idxs.extend(sub_filler_idx)
-        core_texts.extend(sub_filler_texts)
-
-        return core_idxs, core_texts
+        return c_idx, c_text
 
     
     def sliding_window(self, qid : str, query_results : pd.DataFrame):
