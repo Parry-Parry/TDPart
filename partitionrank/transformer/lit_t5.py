@@ -85,9 +85,11 @@ class LiT5(pt.Transformer):
         orig_idxs = np.arange(self.window_size)
         l_text[orig_idxs], l_idx[orig_idxs] = l_text[order], l_idx[order]
 
+        if len(l_text) == self.window_size: return l_idx, l_text, r_idx, r_text
+
         p_id, p_text = doc_idx[order[9]], doc_texts[order[9]]
-        c_text = np.concatenate([l_text[:9],l_text[10:self.window_size]])
-        c_idx = np.concatenate([l_idx[:9],l_idx[10:self.window_size]])
+        c_text = np.concatenate([l_text[:9],l_text[10:]])
+        c_idx = np.concatenate([l_idx[:9],l_idx[10:]])
 
         b_text, b_idx = [], []
         sub_window_size = self.window_size - 1
@@ -107,8 +109,7 @@ class LiT5(pt.Transformer):
             orig_idxs = np.arange(self.window_size)
             l_text[orig_idxs], l_idx[orig_idxs] = l_text[order], l_idx[order]
 
-            # find index of pivot id
-            p_idx = np.where(l_idx == p_id)[0][0]
+            p_idx = np.where(l_idx == p_id)[0][0] # find index of pivot id
             # add left of pivot to candidates and right of pivot to backfill
             c_text = np.concatenate([c_text, l_text[:p_idx]])
             c_idx = np.concatenate([c_idx, l_idx[:p_idx]])
