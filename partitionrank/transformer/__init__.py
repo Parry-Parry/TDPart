@@ -101,7 +101,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
         cutoff = len(r_text) % sub_window_size
         r_text, r_idx = r_text[:-cutoff], r_idx[:-cutoff]
 
-        while len(c_text) < self.buffer and len(r_text) > 0:
+        while len(c_text) <= self.buffer and len(r_text) > 0:
             l_text, r_text = _split(r_text, sub_window_size)
             l_idx, r_idx = _split(r_idx, sub_window_size)
 
