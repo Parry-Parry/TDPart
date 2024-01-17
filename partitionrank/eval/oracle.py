@@ -8,7 +8,7 @@ import ir_datasets as irds
 from os.path import join
 from json import dump
 
-def score_oracle(qrels : str, topics_or_res : str, output_path : str, window_size : int = 20, stride : int = 10, mode : str = 'sliding', buffer : int = 20):
+def score_oracle(qrels : str, topics_or_res : str, output_path : str, window_size : int = 20, stride : int = 10, mode : str = 'sliding', buffer : int = 20, **kwargs):
     topics_or_res = read_results(topics_or_res)
     ds = irds.load(qrels)
     qrels = pd.DataFrame(ds.qrels_iter())
