@@ -22,7 +22,8 @@ def _iter_windows(n, window_size, stride):
 def _split(l, i):
     return l[:i], l[i:]
 
-class QueryLog(namedtuple):
+@dataclass
+class QueryLog:
     qid : str
     inferences : int = 0
     in_tokens : int = 0
