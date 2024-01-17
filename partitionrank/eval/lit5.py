@@ -5,11 +5,17 @@ from partitionrank.transformer.lit_t5 import LiT5
 from fire import Fire
 from os.path import join
 from json import dump
+import ir_datasets as irds
+import pandas as pd
 import logging
 
-def score_lit_t5(dataset : str, topics_or_res : str, output_path : str, checkpoint : str, window_size : int = 20, stride : int = 10, mode : str = 'sliding', buffer : int = 20, max_iters : int = 100, **kwargs):
+def score_lit_t5(dataset : str, qrels : str, topics_or_res : str, output_path : str, checkpoint : str, window_size : int = 20, stride : int = 10, mode : str = 'sliding', buffer : int = 20, max_iters : int = 100, **kwargs):
     topics_or_res = read_results(topics_or_res)
     dataset = pt.get_dataset(dataset)
+    ds = irds.load(qrels)
+    queries = pd.DataFrame(ds.queries_iter()).set_index('query_id').text.to_dict()
+    topics_or_res['query'] = topics_or_res['query'].apply(lambda x: queries[x])
+    del queries
     out_file = join(output_path, f"lit5.{mode}.{buffer}.{window_size}.{stride}.tsv.gz")
     log_file = join(output_path, f"lit5.{mode}.{buffer}.{window_size}.{stride}.log")
     logging.info("Loading LiT5 model")
