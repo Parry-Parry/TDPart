@@ -29,9 +29,9 @@ class LiT5(ListWiseTransformer):
         passages = [self.template.format(q=query, i=i+1, d=text) for i, text in enumerate(doc_text.tolist() + ["" for _ in range(end_idx - start_idx, self.window_size)])]
         inputs = self.tokenizer.batch_encode_plus(passages, return_tensors="pt", padding='max_length', max_length=150, truncation=True)
         # get number of tokens in batch
-        self.current_query.in_tokens += inputs['input_idx'].view(-1).shape[0]
+        self.current_query.in_tokens += inputs['input_ids'].view(-1).shape[0]
         outputs = self.model.generate(
-            input_idx=inputs['input_idx'].cuda().reshape(1, -1),
+            input_idx=inputs['input_ids'].cuda().reshape(1, -1),
             attention_mask=inputs['attention_mask'].cuda().reshape(1, -1),
             max_length=100,
             do_sample=False,
