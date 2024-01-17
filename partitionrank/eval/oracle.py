@@ -6,25 +6,18 @@ from utility import load_yaml
 from partitionrank.transformer.oracle import OracleTransformer
 from fire import Fire
 import ir_datasets as irds
+from os.path import join
 
-def score_oracle(config : str):
-    config = load_yaml(config)
-    topics_or_res = read_results(config['topics_or_res'])
-    output_path = config['output_path']
-    mode = config['mode']
-    qrels = config['qrels']
+def score_oracle(qrels : str, topics_or_res : str, output_path : str, window_size : str, stride : str, mode : str, buffer : int = 20):
+    topics_or_res = read_results(topics_or_res)
     ds = irds.load(qrels)
     qrels = pd.DataFrame(ds.qrels_iter())
-
-    window_size = config['window_size']
-    buffer = config.pop('buffer', 20)
-    stride = config['stride']
-    mode = config['mode']
+    out_file = join(output_path, f"oracle.{mode}.{buffer}.{window_size}.{stride}.tsv.gz")
     
     model = OracleTransformer(qrels, mode=mode, window_size=window_size, buffer=buffer, stride=stride)
     res = model.transform(topics_or_res)
 
-    write_results(res, output_path)
+    write_results(res, out_file)
 
 if __name__ == '__main__':
     Fire(score_oracle)
