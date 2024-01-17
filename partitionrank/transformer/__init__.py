@@ -47,7 +47,13 @@ class MainLog:
 
 class ListWiseTransformer(pt.Transformer, ABC):
 
-    def __init__(self, window_size : int = 20, stride : int = 10, buffer : int = 20, cutoff : int = 10, mode='sliding', max_iters : int = 100) -> None:
+    def __init__(self, 
+                 window_size : int = 20, 
+                 stride : int = 10, 
+                 buffer : int = 20, 
+                 cutoff : int = 10, 
+                 mode='sliding', 
+                 max_iters : int = 100) -> None:
         super().__init__()
 
         self.window_size = window_size

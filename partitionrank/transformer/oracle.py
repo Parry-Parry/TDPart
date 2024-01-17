@@ -6,7 +6,13 @@ if not pt.started(): pt.init()
 from . import ListWiseTransformer
 
 class OracleTransformer(ListWiseTransformer):
-    def __init__(self, qrels : pd.DataFrame, window_size=20, stride=10, buffer : int = 20, mode = 'sliding', max_iters : int = 100) -> None:
+    def __init__(self, 
+                 qrels : pd.DataFrame, 
+                 window_size : int = 20, 
+                 stride : int = 10, 
+                 buffer : int = 20, 
+                 mode = 'sliding', 
+                 max_iters : int = 100) -> None:
         super().__init__(window_size=window_size, stride=stride, buffer=buffer, mode=mode, max_iters=max_iters)
         self.qrels = qrels
     
