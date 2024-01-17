@@ -140,15 +140,27 @@ class ListWiseTransformer(pt.Transformer, ABC):
         return c_idx, c_text
     
     def sliding_window(self, query : str, query_results : pd.DataFrame):
+        qid = query_results['qid'].iloc[0]
+        self.current_query = QueryLog(qid=qid)
         query_results = query_results.sort_values('score', ascending=False)
         doc_idx = query_results['docno'].to_numpy()
         doc_texts = query_results['text'].to_numpy()
         for start_idx, end_idx, window_len in _iter_windows(len(query_results), self.window_size, self.stride):
-            order = self.score(query, doc_texts[start_idx:end_idx].to_list(), start_idx, end_idx, window_len)
+            kwargs = {
+            'qid': qid,
+            'query': query,
+            'doc_text': doc_texts[start_idx:end_idx],
+            'doc_idx': doc_idx[start_idx:end_idx],
+            'start_idx': start_idx,
+            'end_idx': end_idx,
+            'window_len': window_len
+            }
+            order = self.score(**kwargs)
             new_idxs = start_idx + np.array(order)
             orig_idxs = np.arange(start_idx, end_idx)
             doc_idx[orig_idxs] = doc_idx[new_idxs]
             doc_texts[orig_idxs] = doc_texts[new_idxs]
+        self.log.queries.append(self.current_query)
         return doc_idx, doc_texts
 
     def transform(self, inp : pd.DataFrame):
@@ -161,7 +173,6 @@ class ListWiseTransformer(pt.Transformer, ABC):
         }
         with torch.no_grad():
             for (qid, query), query_results in tqdm(inp.groupby(['qid', 'query']), unit='q'):
-                self._reset_budget()
                 doc_idx, doc_texts = self.process(query, query_results)
                 res['qid'].extend([qid] * len(doc_idx))
                 res['query'].extend([query] * len(doc_idx))
