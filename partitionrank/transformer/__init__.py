@@ -5,7 +5,22 @@ import pandas as pd
 import pyterrier as pt 
 if not pt.started(): pt.init()
 from abc import ABC, abstractmethod
+from tqdm.auto import tqdm
+import numpy as np
+import torch
 
+def _iter_windows(n, window_size, stride):
+    # TODO: validate window_size and stride
+    for start_idx in tqdm(range((n // stride) * stride, -1, -stride), unit='window'):
+        end_idx = start_idx + window_size
+        if end_idx > n:
+            end_idx = n
+        window_len = end_idx - start_idx
+        if start_idx == 0 or window_len > stride:
+            yield start_idx, end_idx, window_len
+
+def _split(l, i):
+    return l[:i], l[i:]
 
 class QueryLog(namedtuple):
     qid : str
@@ -31,26 +46,15 @@ class MainLog:
 
 class ListWiseTransformer(pt.Transformer, ABC):
 
-    PRE = ''
-    POST = ''
-    MODEL_TYPE = ''
-    MAX_LENGTH = 200
-    CONTEXT_LENGTH = 4096
-
-    def __init__(self, 
-                 partition_type : str,  
-                 stride : int = 10, 
-                 window : int = 20, 
-                 depth : int = 100, 
-                 shuffle : bool = False,
-                 mode : str = 'sliding') -> None:
+    def __init__(self, window_size : int = 20, stride : int = 10, buffer : int = 20, mode='sliding') -> None:
         super().__init__()
 
-        self.partition_type = partition_type
+        self.window_size = window_size
         self.stride = stride
-        self.window = window
-        self.depth = depth
-        self.shuffle = shuffle
+        self.buffer = buffer
+
+        self.log = MainLog()
+        self.current_query = None
 
         self.process = {
             'sliding': self.sliding_window,
@@ -58,70 +62,112 @@ class ListWiseTransformer(pt.Transformer, ABC):
         }[mode]
     
     @abstractmethod
-    def score(self, subset : pd.DataFrame, start : int):
+    def score(self, *args, **kwargs):
         raise NotImplementedError
     
-    def sliding_window(self, subset : pd.DataFrame):
-        in_token, out_token = 0, 0
-        subset = subset.sort_values('score', ascending=False).reset_index(drop=True).iloc[:self.depth] # get top k
-        if self.shuffle: subset = subset.sample(frac=1).reset_index(drop=True) # shuffle
-        subset['score'] = [1/(i+1) for i in range(len(subset))] # set initial score
+    def _pivot(self, qid : str, query : str, doc_idx : List[str], doc_texts : List[str]):
+        '''
+        l : current left partition being scored
+        r : current right partition being the remainder of the array
+        c : current candidates
+        b : current backfill
+        p : current pivot
+        '''
+        l_text, l_idx = doc_texts[:self.window_size], doc_idx[:self.window_size]
+        r_text, r_idx = doc_texts[self.window_size:], doc_idx[self.window_size:]
 
-        end = self.depth # set initial end
-        start = end - self.window # set initial start
+        kwargs = {
+            'qid': qid,
+            'query': query,
+            'doc_text': l_text,
+            'doc_idx': l_idx,
+            'start_idx': 0,
+            'end_idx': self.window_size,
+            'window_len': self.window_size
+        }
+        order = self.score(**kwargs)
+        orig_idxs = np.arange(self.window_size)
+        l_text[orig_idxs], l_idx[orig_idxs] = l_text[order], l_idx[order]
 
-        while start >= 0: # while start is greater than 0
-            start = max(0, start) 
-            end = min(self.depth, end)
-            current = self.score(subset.iloc[start:end].copy(), start)
-            subset.iloc[start:end] = current
-            end -= self.stride
-            start -= self.stride
+        if len(l_text) == self.window_size: return l_idx, l_text, r_idx, r_text
 
-        return subset, in_token, out_token             
+        p_id, p_text = doc_idx[order[9]], doc_texts[order[9]]
+        c_text = np.concatenate([l_text[:9],l_text[10:]])
+        c_idx = np.concatenate([l_idx[:9],l_idx[10:]])
 
-    def pivot(self, subset : pd.DataFrame):
-        in_token, out_token = 0, 0
-        subset = subset.sort_values('score', ascending=False).reset_index(drop=True).iloc[:self.depth]
-        if self.shuffle: subset = subset.sample(frac=1).reset_index(drop=True)
-        subset['score'] = [1/(i+1) for i in range(len(subset))]
+        b_text, b_idx = [], []
+        sub_window_size = self.window_size - 1
 
-        start = 0
-        end = start + self.stride 
+        cutoff = len(r_text) % sub_window_size
+        r_text, r_idx = r_text[:-cutoff], r_idx[:-cutoff]
 
-        # sort initial to get pivot point 
+        while len(c_text) < self.buffer and len(r_text) > 0:
+            l_text, r_text = _split(r_text, sub_window_size)
+            l_idx, r_idx = _split(r_idx, sub_window_size)
 
-        current = subset.iloc[start:end].copy()
-        scores = self.score(current, start)
-        current = current.iloc[scores[::-1]].reset_index(drop=True)
-        current['score'] = [1/(start+i) for i in range(len(current))]
+            # prepend pivot to left partition
+            l_text = np.concatenate([[p_text], l_text])
+            l_idx = np.concatenate([[p_id], l_idx])
 
-        candidates = current.copy()
-        pivot = candidates.iloc[-1]
+            order = self.score(query, l_text, 0, self.window_size, self.window_size)
+            orig_idxs = np.arange(self.window_size)
+            l_text[orig_idxs], l_idx[orig_idxs] = l_text[order], l_idx[order]
 
-        start += self.stride
-        end += self.stride
+            p_idx = np.where(l_idx == p_id)[0][0] # find index of pivot id
+            # add left of pivot to candidates and right of pivot to backfill
+            c_text = np.concatenate([c_text, l_text[:p_idx]])
+            c_idx = np.concatenate([c_idx, l_idx[:p_idx]])
+            b_text = np.concatenate([b_text, l_text[p_idx+1:]])
+            b_idx = np.concatenate([b_idx, l_idx[p_idx+1:]])
+        
+        return c_idx[:self.buffer], c_text[:self.buffer], b_idx, b_text
+    
+    def pivot(self, query : str, query_results : pd.DataFrame):
+        qid = query_results['qid'].iloc[0]
+        self.current_query = QueryLog(qid=qid)
+        query_results = query_results.sort_values('score', ascending=False)
+        doc_idx = query_results['docno'].to_numpy()
+        doc_texts = query_results['text'].to_numpy()
 
-        while end <= len(subset):
-            start = max(0, start)
-            end = min(len(subset), end)
+        c_idx, c_text, f_idx, f_text = self._pivot(qid, query, doc_idx, doc_texts)
+        c_idx, c_text, b_idx, b_text = self._pivot(qid, query, c_idx, c_text)
 
-            current = subset.iloc[start:end-1].copy()
-            current.append(pivot)
-            scores = self.score(current, start)
-            current = current.iloc[scores[::-1]].reset_index(drop=True)
-            # get index of pivot doc id
-            pivot_index = subset[subset['docid'] == pivot['docid']].index[0]
-            more_rel = current.iloc[:pivot_index]
-            more_rel.append(pivot)
-            candidates = pd.concat([candidates.iloc[:-1], more_rel], ignore_index=True)
+        c_idx = np.concatenate([c_idx, b_idx, f_idx])
+        c_text = np.concatenate([c_text, b_text, f_text])
 
-    def transform(self, topics_or_res: pd.DataFrame) -> pd.DataFrame:
-        in_token, out_token = 0, 0
-        out = []
-        for _, subset in topics_or_res.groupby('qid'):
-            _subset, _in_token, _out_token = self.process(subset)
-            in_token += _in_token
-            out_token += _out_token
-            out.append(_subset)
-        return pd.concat(out, ignore_index=True)
+        self.log.queries.append(self.current_query)
+
+        return c_idx, c_text
+    
+    def sliding_window(self, query : str, query_results : pd.DataFrame):
+        query_results = query_results.sort_values('score', ascending=False)
+        doc_idx = query_results['docno'].to_numpy()
+        doc_texts = query_results['text'].to_numpy()
+        for start_idx, end_idx, window_len in _iter_windows(len(query_results), self.window_size, self.stride):
+            order = self.score(query, doc_texts[start_idx:end_idx].to_list(), start_idx, end_idx, window_len)
+            new_idxs = start_idx + np.array(order)
+            orig_idxs = np.arange(start_idx, end_idx)
+            doc_idx[orig_idxs] = doc_idx[new_idxs]
+            doc_texts[orig_idxs] = doc_texts[new_idxs]
+        return doc_idx, doc_texts
+
+    def transform(self, inp : pd.DataFrame):
+        res = {
+            'qid': [],
+            'query': [],
+            'docno': [],
+            'text': [],
+            'rank': [],
+        }
+        with torch.no_grad():
+            for (qid, query), query_results in tqdm(inp.groupby(['qid', 'query']), unit='q'):
+                self._reset_budget()
+                doc_idx, doc_texts = self.process(query, query_results)
+                res['qid'].extend([qid] * len(doc_idx))
+                res['query'].extend([query] * len(doc_idx))
+                res['docno'].extend(doc_idx)
+                res['text'].extend(doc_texts)
+                res['rank'].extend(list(range(len(doc_idx))))
+        res = pd.DataFrame(res)
+        res['score'] = -res['rank'].astype(float)
+        return res
