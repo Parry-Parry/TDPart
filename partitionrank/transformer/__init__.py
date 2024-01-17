@@ -69,7 +69,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
     def score(self, *args, **kwargs):
         raise NotImplementedError
     
-    def _first(self, qid : str, query : str, doc_idx : List[str], doc_texts : List[str]):
+    def _pivot(self, qid : str, query : str, doc_idx : List[str], doc_texts : List[str]):
         '''
         l : current left partition being scored
         r : current right partition being the remainder of the array
@@ -133,20 +133,6 @@ class ListWiseTransformer(pt.Transformer, ABC):
         if len(c_text) == self.cutoff - 1: return np.concatenate([c_idx, [p_idx]]), np.concatenate([c_text, [p_text]]), b_idx, b_text, True 
         # we have found candidates better than p
         return c_idx, c_text, np.concatenate([[p_idx], b_idx]), np.concatenate([[p_text], b_text]), False
-
-    def _second(self, qid : str, query : str, doc_idx : List[str], doc_texts : List[str]):
-        indicator = False
-        num_iters = 0
-        c_idx, c_text = doc_idx, doc_texts
-        f_idx, f_text = [], []
-        while not indicator and num_iters < self.max_iters:
-            num_iters += 1
-            c_idx, c_text, b_idx, b_text, indicator = self._first(qid, query, c_idx, c_text)
-            f_idx = np.concatenate([f_idx, b_idx])
-            f_text = np.concatenate([f_text, b_text])
-        if num_iters == self.max_iters:
-            print(f"WARNING: max_iters reached for query {qid}")
-        return np.concatenate([c_idx, f_idx]), np.concatenate([c_text, f_text])
     
     def pivot(self, query : str, query_results : pd.DataFrame):
         qid = query_results['qid'].iloc[0]
@@ -155,16 +141,22 @@ class ListWiseTransformer(pt.Transformer, ABC):
         doc_idx = query_results['docno'].to_numpy()
         doc_texts = query_results['text'].to_numpy()
 
-        c_idx, c_text, f_idx, f_text, indicator = self._first(qid, query, doc_idx, doc_texts) # initial comb
-        if indicator: return np.concatenate([c_idx, f_idx]), np.concatenate([c_text, f_text])
-        c_idx, c_text = self._second(qid, query, c_idx, c_text)
+        indicator = False
+        num_iters = 0
+        c_idx, c_text = doc_idx, doc_texts
+        b_idx, b_text = [], []
 
-        c_idx = np.concatenate([c_idx, f_idx])
-        c_text = np.concatenate([c_text, f_text])
+        while not indicator and num_iters < self.max_iters:
+            num_iters += 1
+            c_idx, c_text, _idx, _text, indicator = self._pivot(qid, query, c_idx, c_text)
+            b_idx = np.concatenate([b_idx, _idx])
+            b_text = np.concatenate([b_text, _text])
+        if num_iters == self.max_iters:
+            print(f"WARNING: max_iters reached for query {qid}")
 
         self.log.queries.append(self.current_query)
 
-        return c_idx, c_text
+        return np.concatenate([c_idx, b_idx]), np.concatenate([c_text, b_text])
     
     def sliding_window(self, query : str, query_results : pd.DataFrame):
         qid = query_results['qid'].iloc[0]
