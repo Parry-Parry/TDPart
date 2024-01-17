@@ -9,8 +9,9 @@ from os.path import join
 from json import dump
 import logging
 
-def score_oracle(qrels : str, topics_or_res : str, output_path : str, window_size : int = 20, stride : int = 10, mode : str = 'sliding', buffer : int = 20, max_iters : int = 100, **kwargs):
+def score_oracle(qrels : str, dataset : str, topics_or_res : str, output_path : str, window_size : int = 20, stride : int = 10, mode : str = 'sliding', buffer : int = 20, max_iters : int = 100, **kwargs):
     topics_or_res = read_results(topics_or_res)
+    dataset = pt.get_dataset(dataset)
     ds = irds.load(qrels)
     qrels = pd.DataFrame(ds.qrels_iter())
     out_file = join(output_path, f"oracle.{mode}.{buffer}.{window_size}.{stride}.tsv.gz")
