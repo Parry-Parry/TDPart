@@ -12,7 +12,7 @@ class OracleTransformer(ListWiseTransformer):
     
     def score(self, qid : str, doc_idx, **kwargs):
         self.current_query.inferences += 1
-        doc_idx = doc_idx.to_list()
+        doc_idx = doc_idx.tolist()
         self.current_query.inferences += 1
         q_rels = self.qrels[self.qrels['qid'] == qid].set_index('docno').relevance.to_dict()
         q_rels = defaultdict(lambda: 0, q_rels)
