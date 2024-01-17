@@ -187,6 +187,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
         return doc_idx, doc_texts
 
     def transform(self, inp : pd.DataFrame):
+        print(inp.head())
         res = {
             'qid': [],
             'query': [],
