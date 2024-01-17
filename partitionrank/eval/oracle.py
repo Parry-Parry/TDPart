@@ -15,7 +15,7 @@ def score_oracle(qrels : str, dataset : str, topics_or_res : str, output_path : 
     ds = irds.load(qrels)
     qrels = pd.DataFrame(ds.qrels_iter())
     queries = pd.DataFrame(ds.queries_iter()).set_index('query_id').text.to_dict()
-    topics_or_res['query'] = topics_or_res['query'].apply(lambda x: queries[x])
+    topics_or_res['query'] = topics_or_res['qid'].apply(lambda x: queries[x])
     out_file = join(output_path, f"oracle.{mode}.{buffer}.{window_size}.{stride}.tsv.gz")
     log_file = join(output_path, f"oracle.{mode}.{buffer}.{window_size}.{stride}.log")
     logging.info("Loading Oracle model")

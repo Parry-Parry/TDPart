@@ -14,7 +14,7 @@ def score_lit_t5(dataset : str, qrels : str, topics_or_res : str, output_path : 
     dataset = pt.get_dataset(dataset)
     ds = irds.load(qrels)
     queries = pd.DataFrame(ds.queries_iter()).set_index('query_id').text.to_dict()
-    topics_or_res['query'] = topics_or_res['query'].apply(lambda x: queries[x])
+    topics_or_res['query'] = topics_or_res['qid'].apply(lambda x: queries[x])
     del queries
     out_file = join(output_path, f"lit5.{mode}.{buffer}.{window_size}.{stride}.tsv.gz")
     log_file = join(output_path, f"lit5.{mode}.{buffer}.{window_size}.{stride}.log")
