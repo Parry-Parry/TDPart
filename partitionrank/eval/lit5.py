@@ -5,7 +5,7 @@ from partitionrank.transformer.lit_t5 import LiT5
 from fire import Fire
 from os.path import join
 
-def score_lit_t5(dataset : str, topics_or_res : str, output_path : str, window_size : str, stride : str, mode : str, checkpoint : str, buffer : int = 20):
+def score_lit_t5(dataset : str, topics_or_res : str, output_path : str, checkpoint : str, window_size : int = 20, stride : int = 10, mode : str = 'sliding', buffer : int = 20):
     topics_or_res = read_results(topics_or_res)
     out_file = join(output_path, f"lit5.{mode}.{buffer}.{window_size}.{stride}.tsv.gz")
     
