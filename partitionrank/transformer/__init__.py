@@ -46,13 +46,14 @@ class MainLog:
 
 class ListWiseTransformer(pt.Transformer, ABC):
 
-    def __init__(self, window_size : int = 20, stride : int = 10, buffer : int = 20, cutoff : int = 10, mode='sliding') -> None:
+    def __init__(self, window_size : int = 20, stride : int = 10, buffer : int = 20, cutoff : int = 10, mode='sliding', max_iters : int = 100) -> None:
         super().__init__()
 
         self.window_size = window_size
         self.stride = stride
         self.buffer = buffer
         self.cutoff = cutoff - 1
+        self.max_iters = max_iters
 
         assert cutoff < window_size, "cutoff must be less than window_size"
 
@@ -128,13 +129,19 @@ class ListWiseTransformer(pt.Transformer, ABC):
             b_text = np.concatenate([b_text, l_text[p_idx+1:]])
             b_idx = np.concatenate([b_idx, l_idx[p_idx+1:]])
         
-        if len(c_text) == self.cutoff - 1: return np.concatenate([c_idx, [p_idx]]), np.concatenate([c_text, [p_text]]), b_idx, b_text, True
+        # we have found no candidates better than p
+        if len(c_text) == self.cutoff - 1: return np.concatenate([c_idx, [p_idx]]), np.concatenate([c_text, [p_text]]), b_idx, b_text, True 
+        # we have found candidates better than p
         return c_idx, c_text, np.concatenate([[p_idx], b_idx]), np.concatenate([[p_text], b_text]), False
 
     def _second(self, qid : str, query : str, doc_idx : List[str], doc_texts : List[str]):
         indicator = False
-        while not indicator:
+        num_iters = 0
+        while not indicator and num_iters < self.max_iters:
+            num_iters += 1
             c_idx, c_text, b_idx, b_text, indicator = self._first(qid, query, doc_idx, doc_texts)
+        if num_iters == self.max_iters:
+            print(f"WARNING: max_iters reached for query {qid}")
         return np.concatenate([c_idx, b_idx]), np.concatenate([c_text, b_text])
     
     def pivot(self, query : str, query_results : pd.DataFrame):
