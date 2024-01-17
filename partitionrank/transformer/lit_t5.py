@@ -5,6 +5,7 @@ import numpy as np
 import re
 from transformers import T5Tokenizer
 from pyterrier_t5.modeling_fid import FiD
+from . import QueryLog, MainLog
 import pyterrier as pt
 from tqdm.auto import tqdm
 
@@ -41,20 +42,27 @@ class LiT5(pt.Transformer):
         self.stride = stride
         self.buffer = buffer
 
+        self.log = MainLog()
+        self.current_query = None
+
         self.process = {
             'sliding': self.sliding_window,
             'pivot': self.pivot
         }[mode]
 
     def score(self, query : str, doc_texts : List[str], start_idx : int, end_idx : int, window_len : int):
+        self.current_query.inferences += 1
         passages = [self.template.format(q=query, i=i+1, d=text) for i, text in enumerate(doc_texts + ["" for _ in range(end_idx - start_idx, self.window_size)])]
         inputs = self.tokenizer.batch_encode_plus(passages, return_tensors="pt", padding='max_length', max_length=150, truncation=True)
+        # get number of tokens in batch
+        self.current_query.in_tokens += inputs['input_idx'].view(-1).shape[0]
         outputs = self.model.generate(
             input_idx=inputs['input_idx'].cuda().reshape(1, -1),
             attention_mask=inputs['attention_mask'].cuda().reshape(1, -1),
             max_length=100,
             do_sample=False,
         )
+        self.current_query.out_tokens += len(outputs[0])
         output = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
         output = re.sub(r'[^0-9]', ' ', output) # clean outputs (keep only digits)
         output = [int(x)-1 for x in output.split()] # convert to integer
@@ -111,6 +119,7 @@ class LiT5(pt.Transformer):
         
 
     def pivot(self, query : str, query_results : pd.DataFrame):
+        self.current_query = QueryLog(qid=query_results['qid'].iloc[0])
         query_results = query_results.sort_values('score', ascending=False)
         doc_idx = query_results['docno'].to_numpy()
         doc_texts = query_results['text'].to_numpy()
@@ -120,6 +129,8 @@ class LiT5(pt.Transformer):
 
         c_idx = np.concatenate([c_idx, b_idx, f_idx])
         c_text = np.concatenate([c_text, b_text, f_text])
+
+        self.log.queries.append(self.current_query)
 
         return c_idx, c_text
     

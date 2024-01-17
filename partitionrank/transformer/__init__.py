@@ -1,7 +1,33 @@
+from collections import namedtuple
+from dataclasses import dataclass
+from typing import List
 import pandas as pd
 import pyterrier as pt 
 if not pt.started(): pt.init()
 from abc import ABC, abstractmethod
+
+
+class QueryLog(namedtuple):
+    qid : str
+    inferences : int = 0
+    in_tokens : int = 0
+    out_tokens : int = 0
+
+@dataclass
+class MainLog:
+    query_logs : List[QueryLog] = []
+
+    @property
+    def inferences(self):
+        return sum([i.inferences for i in self.query_logs])
+
+    @property
+    def in_tokens(self):
+        return sum([i.in_tokens for i in self.query_logs])
+    
+    @property
+    def out_tokens(self):
+        return sum([i.out_tokens for i in self.query_logs])
 
 class ListWiseTransformer(pt.Transformer, ABC):
 
