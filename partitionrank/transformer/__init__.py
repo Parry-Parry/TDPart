@@ -6,6 +6,7 @@ if not pt.started(): pt.init()
 from abc import ABC, abstractmethod
 from tqdm.auto import tqdm
 import numpy as np
+from numpy import concatenate as concat
 import torch
 
 def _iter_windows(n, window_size, stride):
@@ -105,8 +106,8 @@ class ListWiseTransformer(pt.Transformer, ABC):
             l_idx, r_idx = _split(r_idx, sub_window_size)
 
             # prepend pivot to left partition
-            l_text = np.concatenate([[p_text], l_text])
-            l_idx = np.concatenate([[p_id], l_idx])
+            l_text = concat([[p_text], l_text])
+            l_idx = concat([[p_id], l_idx])
 
             kwargs = {
                 'qid': qid,
@@ -124,15 +125,15 @@ class ListWiseTransformer(pt.Transformer, ABC):
 
             p_idx = np.where(l_idx == p_id)[0][0] # find index of pivot id
             # add left of pivot to candidates and right of pivot to backfill
-            c_text = np.concatenate([c_text, l_text[:p_idx]])
-            c_idx = np.concatenate([c_idx, l_idx[:p_idx]])
-            b_text = np.concatenate([b_text, l_text[p_idx+1:]])
-            b_idx = np.concatenate([b_idx, l_idx[p_idx+1:]])
+            c_text = concat([c_text, l_text[:p_idx]])
+            c_idx = concat([c_idx, l_idx[:p_idx]])
+            b_text = concat([b_text, l_text[p_idx+1:]])
+            b_idx = concat([b_idx, l_idx[p_idx+1:]])
         
         # we have found no candidates better than p
-        if len(c_text) == self.cutoff - 1: return np.concatenate([c_idx, [p_idx]]), np.concatenate([c_text, [p_text]]), b_idx, b_text, True 
+        if len(c_text) == self.cutoff - 1: return concat([c_idx, [p_idx]]), concat([c_text, [p_text]]), b_idx, b_text, True 
         # we have found candidates better than p
-        return c_idx, c_text, np.concatenate([[p_idx], b_idx]), np.concatenate([[p_text], b_text]), False
+        return c_idx, c_text, concat([[p_idx], b_idx]), concat([[p_text], b_text]), False
     
     def pivot(self, query : str, query_results : pd.DataFrame):
         qid = query_results['qid'].iloc[0]
@@ -149,14 +150,14 @@ class ListWiseTransformer(pt.Transformer, ABC):
         while not indicator and num_iters < self.max_iters:
             num_iters += 1
             c_idx, c_text, _idx, _text, indicator = self._pivot(qid, query, c_idx, c_text)
-            b_idx = np.concatenate([b_idx, _idx])
-            b_text = np.concatenate([b_text, _text])
+            b_idx = concat([b_idx, _idx])
+            b_text = concat([b_text, _text])
         if num_iters == self.max_iters:
             print(f"WARNING: max_iters reached for query {qid}")
 
         self.log.queries.append(self.current_query)
 
-        return np.concatenate([c_idx, b_idx]), np.concatenate([c_text, b_text])
+        return concat([c_idx, b_idx]), concat([c_text, b_text])
     
     def sliding_window(self, query : str, query_results : pd.DataFrame):
         qid = query_results['qid'].iloc[0]

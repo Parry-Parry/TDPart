@@ -24,9 +24,9 @@ class LiT5(ListWiseTransformer):
             self.model = self.model.bfloat16()
         self.bfloat16 = bfloat16
 
-    def score(self, query : str, doc_texts : List[str], start_idx : int, end_idx : int, window_len : int, **kwargs):
+    def score(self, query : str, doc_text : List[str], start_idx : int, end_idx : int, window_len : int, **kwargs):
         self.current_query.inferences += 1
-        passages = [self.template.format(q=query, i=i+1, d=text) for i, text in enumerate(doc_texts + ["" for _ in range(end_idx - start_idx, self.window_size)])]
+        passages = [self.template.format(q=query, i=i+1, d=text) for i, text in enumerate(doc_text + ["" for _ in range(end_idx - start_idx, self.window_size)])]
         inputs = self.tokenizer.batch_encode_plus(passages, return_tensors="pt", padding='max_length', max_length=150, truncation=True)
         # get number of tokens in batch
         self.current_query.in_tokens += inputs['input_idx'].view(-1).shape[0]
