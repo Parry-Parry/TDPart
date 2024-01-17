@@ -15,19 +15,19 @@ class QueryLog(namedtuple):
 
 @dataclass
 class MainLog:
-    query_logs : List[QueryLog] = []
+    queries : List[QueryLog] = []
 
     @property
     def inferences(self):
-        return sum([i.inferences for i in self.query_logs])
+        return sum([i.inferences for i in self.queries])
 
     @property
     def in_tokens(self):
-        return sum([i.in_tokens for i in self.query_logs])
+        return sum([i.in_tokens for i in self.queries])
     
     @property
     def out_tokens(self):
-        return sum([i.out_tokens for i in self.query_logs])
+        return sum([i.out_tokens for i in self.queries])
 
 class ListWiseTransformer(pt.Transformer, ABC):
 
