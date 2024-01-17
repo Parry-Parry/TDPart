@@ -1,13 +1,10 @@
 from typing import List
 import torch
-import pandas as pd
 import numpy as np
 import re
 from transformers import T5Tokenizer
 from pyterrier_t5.modeling_fid import FiD
 from . import ListWiseTransformer
-import pyterrier as pt
-from tqdm.auto import tqdm
 
 class LiT5(ListWiseTransformer):
     template = "Search Query: {q} Passage: [{i}] {d} Relevance Ranking: "
