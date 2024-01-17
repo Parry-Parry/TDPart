@@ -46,12 +46,15 @@ class MainLog:
 
 class ListWiseTransformer(pt.Transformer, ABC):
 
-    def __init__(self, window_size : int = 20, stride : int = 10, buffer : int = 20, mode='sliding') -> None:
+    def __init__(self, window_size : int = 20, stride : int = 10, buffer : int = 20, cutoff : int = 10, mode='sliding') -> None:
         super().__init__()
 
         self.window_size = window_size
         self.stride = stride
         self.buffer = buffer
+        self.cutoff = cutoff - 1
+
+        assert cutoff < window_size, "cutoff must be less than window_size"
 
         self.log = MainLog()
         self.current_query = None
@@ -65,7 +68,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
     def score(self, *args, **kwargs):
         raise NotImplementedError
     
-    def _pivot(self, qid : str, query : str, doc_idx : List[str], doc_texts : List[str]):
+    def _first(self, qid : str, query : str, doc_idx : List[str], doc_texts : List[str]):
         '''
         l : current left partition being scored
         r : current right partition being the remainder of the array
@@ -89,19 +92,14 @@ class ListWiseTransformer(pt.Transformer, ABC):
         orig_idxs = np.arange(self.window_size)
         l_text[orig_idxs], l_idx[orig_idxs] = l_text[order], l_idx[order]
 
-        if len(l_text) == self.window_size: return l_idx, l_text, r_idx, r_text
+        p_id, p_text = doc_idx[order[self.cutoff]], doc_texts[order[self.cutoff]]
 
-        p_id, p_text = doc_idx[order[9]], doc_texts[order[9]]
-        c_text = np.concatenate([l_text[:9],l_text[10:]])
-        c_idx = np.concatenate([l_idx[:9],l_idx[10:]])
+        c_text, c_idx = doc_idx[order[:self.cutoff]], doc_texts[order[:self.cutoff]]
+        b_text, b_idx = doc_idx[order[self.cutoff+1:]], doc_texts[order[self.cutoff+1:]]
 
-        b_text, b_idx = [], []
         sub_window_size = self.window_size - 1
 
-        cutoff = len(r_text) % sub_window_size
-        r_text, r_idx = r_text[:-cutoff], r_idx[:-cutoff]
-
-        while len(c_text) <= self.buffer and len(r_text) > 0:
+        while len(c_text) <= self.buffer and len(r_text) >= sub_window_size:
             l_text, r_text = _split(r_text, sub_window_size)
             l_idx, r_idx = _split(r_idx, sub_window_size)
 
@@ -109,7 +107,17 @@ class ListWiseTransformer(pt.Transformer, ABC):
             l_text = np.concatenate([[p_text], l_text])
             l_idx = np.concatenate([[p_id], l_idx])
 
-            order = self.score(query, l_text, 0, self.window_size, self.window_size)
+            kwargs = {
+                'qid': qid,
+                'query': query,
+                'doc_text': l_text,
+                'doc_idx': l_idx,
+                'start_idx': 0,
+                'end_idx': self.window_size,
+                'window_len': self.window_size
+            }
+
+            order = self.score(**kwargs)
             orig_idxs = np.arange(self.window_size)
             l_text[orig_idxs], l_idx[orig_idxs] = l_text[order], l_idx[order]
 
@@ -120,7 +128,14 @@ class ListWiseTransformer(pt.Transformer, ABC):
             b_text = np.concatenate([b_text, l_text[p_idx+1:]])
             b_idx = np.concatenate([b_idx, l_idx[p_idx+1:]])
         
-        return c_idx[:self.buffer], c_text[:self.buffer], b_idx, b_text
+        if len(c_text) == self.cutoff - 1: return np.concatenate([c_idx, [p_idx]]), np.concatenate([c_text, [p_text]]), b_idx, b_text, True
+        return c_idx, c_text, np.concatenate([[p_idx], b_idx]), np.concatenate([[p_text], b_text]), False
+
+    def _second(self, qid : str, query : str, doc_idx : List[str], doc_texts : List[str]):
+        indicator = False
+        while not indicator:
+            c_idx, c_text, b_idx, b_text, indicator = self._first(qid, query, doc_idx, doc_texts)
+        return np.concatenate([c_idx, b_idx]), np.concatenate([c_text, b_text])
     
     def pivot(self, query : str, query_results : pd.DataFrame):
         qid = query_results['qid'].iloc[0]
@@ -129,11 +144,12 @@ class ListWiseTransformer(pt.Transformer, ABC):
         doc_idx = query_results['docno'].to_numpy()
         doc_texts = query_results['text'].to_numpy()
 
-        c_idx, c_text, f_idx, f_text = self._pivot(qid, query, doc_idx, doc_texts)
-        c_idx, c_text, b_idx, b_text = self._pivot(qid, query, c_idx, c_text)
+        c_idx, c_text, f_idx, f_text, indicator = self._first(qid, query, doc_idx, doc_texts) # initial comb
+        if indicator: return np.concatenate([c_idx, f_idx]), np.concatenate([c_text, f_text])
+        c_idx, c_text = self._second(qid, query, c_idx, c_text)
 
-        c_idx = np.concatenate([c_idx, b_idx, f_idx])
-        c_text = np.concatenate([c_text, b_text, f_text])
+        c_idx = np.concatenate([c_idx, f_idx])
+        c_text = np.concatenate([c_text, f_text])
 
         self.log.queries.append(self.current_query)
 
