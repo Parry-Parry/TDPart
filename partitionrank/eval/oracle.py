@@ -18,7 +18,7 @@ def score_oracle(qrels : str, dataset : str, topics_or_res : str, output_path : 
     log_file = join(output_path, f"oracle.{mode}.{buffer}.{window_size}.{stride}.log")
     logging.info("Loading Oracle model")
     model = OracleTransformer(qrels, mode=mode, window_size=window_size, buffer=buffer, stride=stride, max_iters=max_iters)
-    res = model.transform(topics_or_res)
+    res = pt.text.get_text(dataset, "text") >> model.transform(topics_or_res)
 
     with open(log_file, 'w') as f:
         dump(model.log.__dict__, f, default=lambda obj: obj.__dict__)
