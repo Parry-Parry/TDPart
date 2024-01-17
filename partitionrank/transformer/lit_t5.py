@@ -8,8 +8,8 @@ from . import ListWiseTransformer
 
 class LiT5(ListWiseTransformer):
     template = "Search Query: {q} Passage: [{i}] {d} Relevance Ranking: "
-    def __init__(self, model_path='castorini/LiT5-Distill-large', batch_size=16, verbose=True, bfloat16=None, window_size : int = 20, stride : int = 10, buffer : int = 20, mode='sliding'):
-        super().__init__(window_size=window_size, stride=stride, buffer=buffer, mode=mode)
+    def __init__(self, model_path='castorini/LiT5-Distill-large', batch_size=16, verbose=True, bfloat16=None, window_size : int = 20, stride : int = 10, buffer : int = 20, mode='sliding', max_iters : int = 100):
+        super().__init__(window_size=window_size, stride=stride, buffer=buffer, mode=mode, max_iters=max_iters)
         self.tokenizer = T5Tokenizer.from_pretrained(model_path, return_dict=False, legacy=False, use_fast=True)
         self.model = FiD.from_pretrained(model_path, from_flax=False).cuda().eval()
         self.model.encoder.config.n_passages = window_size
