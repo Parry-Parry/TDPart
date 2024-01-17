@@ -14,7 +14,7 @@ class OracleTransformer(ListWiseTransformer):
         self.current_query.inferences += 1
         doc_idx = doc_idx.tolist()
         self.current_query.inferences += 1
-        q_rels = self.qrels[self.qrels['qid'] == qid].set_index('docno').relevance.to_dict()
+        q_rels = self.qrels[self.qrels['query_id'] == qid].set_index('doc_id').relevance.to_dict()
         q_rels = defaultdict(lambda: 0, q_rels)
 
         doc_rel = [q_rels[i] for i in doc_idx]
