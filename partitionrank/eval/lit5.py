@@ -14,9 +14,9 @@ def score_lit_t5(dataset : str, topics_or_res : str, output_path : str, checkpoi
     log_file = join(output_path, f"lit5.{mode}.{buffer}.{window_size}.{stride}.log")
     logging.info("Loading LiT5 model")
     model = LiT5(model_path=checkpoint, mode=mode, window_size=window_size, buffer=buffer, stride=stride, max_iters=max_iters)
-    model = pt.text.get_text(dataset, "text") >> model
+    pipe = pt.text.get_text(dataset, "text") >> model
 
-    res = model.transform(topics_or_res)
+    res = pipe.transform(topics_or_res)
 
     # write model.log to log_file as a dict json dump
 
