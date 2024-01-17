@@ -1,5 +1,4 @@
-from collections import namedtuple
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List
 import pandas as pd
 import pyterrier as pt 
@@ -31,7 +30,7 @@ class QueryLog:
 
 @dataclass
 class MainLog:
-    queries : List[QueryLog] = []
+    queries : List[QueryLog] = field(default_factory=list) 
 
     @property
     def inferences(self):
