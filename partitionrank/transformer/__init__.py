@@ -86,8 +86,8 @@ class ListWiseTransformer(pt.Transformer, ABC):
         p : current pivot
         '''
         logging.info(f"Processing query {qid} with {len(doc_idx)} documents")
-        l_idx, l_text,  = doc_idx[:self.window_size], doc_texts[:self.window_size]
-        r_idx, r_text,  = doc_idx[self.window_size:], doc_texts[self.window_size:]
+        l_idx, l_text = doc_idx[:self.window_size], doc_texts[:self.window_size]
+        r_idx, r_text = doc_idx[self.window_size:], doc_texts[self.window_size:]
 
         kwargs = {
             'qid': qid,
@@ -108,10 +108,10 @@ class ListWiseTransformer(pt.Transformer, ABC):
             return l_idx, l_text, r_idx, r_text, True # breakout as only single sort is required
         p_id, p_text = l_idx[order[self.cutoff]], l_text[order[self.cutoff]]
 
-        c_idx, c_text = l_idx[order[:self.cutoff]], l_text[order[:self.cutoff]]
-        b_idx, b_text = l_idx[order[self.cutoff+1:]], l_text[order[self.cutoff+1:]]
+        c_idx, c_text = l_idx[order[:self.cutoff]], l_text[order[:self.cutoff]] # create initial < p
+        b_idx, b_text = l_idx[order[self.cutoff+1:]], l_text[order[self.cutoff+1:]] # create initial > p
 
-        sub_window_size = self.window_size - 1
+        sub_window_size = self.window_size - 1 # account for addition of p
 
         while len(c_text) <= self.buffer and len(r_text) >= sub_window_size:
             l_text, r_text = _split(r_text, sub_window_size)
