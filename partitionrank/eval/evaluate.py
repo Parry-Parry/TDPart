@@ -17,6 +17,7 @@ def main(eval :str, run_dir : str, out_dir : str = None):
     df = []
     for file in files:
         if file.endswith(".gz"):
+            print(file)
             name = file.strip('.gz')
             run = read_trec_run(join(run_dir, file))
             res = evaluate.calc_aggregate(run)
