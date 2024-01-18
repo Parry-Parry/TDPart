@@ -101,7 +101,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
         order = self.score(**kwargs)
         orig_idxs = np.arange(len(l_text))
         l_text[orig_idxs], l_idx[orig_idxs] = l_text[order], l_idx[order]
-
+        if len(l_text) < self.cutoff: return l_idx, l_text, r_idx, r_text, True # breakout as we have found no candidates better than p
         p_id, p_text = doc_idx[order[self.cutoff]], doc_texts[order[self.cutoff]]
 
         c_text, c_idx = doc_idx[order[:self.cutoff]], doc_texts[order[:self.cutoff]]
