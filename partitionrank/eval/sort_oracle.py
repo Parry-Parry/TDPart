@@ -18,7 +18,7 @@ def score_oracle(window_size : int = 20, stride : int = 10, mode : str = 'slidin
     records = []
     for i in range(3):
         for j in range(100):
-            records.append({'qid': i, 'query' : str(i), 'docno': j, 'text': np.random.randint(0, 1000)})
+            records.append({'qid': i, 'query' : str(i), 'docno': j, 'text': np.random.randint(0, 1000), 'score' : 0.0})
     topics_or_res = pd.DataFrame.from_records(records)   
     res = pipe.transform(topics_or_res)
     print(res.head(20))
