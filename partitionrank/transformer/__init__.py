@@ -107,10 +107,10 @@ class ListWiseTransformer(pt.Transformer, ABC):
             logging.info('Breaking out')
             breakpoint()
             return l_idx, l_text, r_idx, r_text, True # breakout as only single sort is required
-        p_id, p_text = l_idx[order[self.cutoff]], l_text[order[self.cutoff]]
+        p_id, p_text = l_idx[self.cutoff], l_text[self.cutoff]
 
-        c_idx, c_text = l_idx[order[:self.cutoff]], l_text[order[:self.cutoff]] # create initial < p
-        b_idx, b_text = l_idx[order[self.cutoff+1:]], l_text[order[self.cutoff+1:]] # create initial > p
+        c_idx, c_text = l_idx[:self.cutoff], l_text[:self.cutoff] # create initial < p
+        b_idx, b_text = l_idx[self.cutoff+1:], l_text[self.cutoff+1:] # create initial > p
         breakpoint()
         sub_window_size = self.window_size - 1 # account for addition of p
 
