@@ -107,8 +107,8 @@ class ListWiseTransformer(pt.Transformer, ABC):
             return l_idx, l_text, r_idx, r_text, True # breakout as only single sort is required
         p_id, p_text = l_text[order[self.cutoff]], l_text[order[self.cutoff]]
 
-        c_text, c_idx = l_text[order[:self.cutoff]], l_text[order[:self.cutoff]]
-        b_text, b_idx = l_text[order[self.cutoff+1:]], l_text[order[self.cutoff+1:]]
+        c_text, c_idx = l_text[order[:self.cutoff]], l_idx[order[:self.cutoff]]
+        b_text, b_idx = l_text[order[self.cutoff+1:]], l_idx[order[self.cutoff+1:]]
 
         sub_window_size = self.window_size - 1
 
