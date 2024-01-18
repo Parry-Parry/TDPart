@@ -105,13 +105,13 @@ class ListWiseTransformer(pt.Transformer, ABC):
         logging.info(f"Initial sort complete for query {qid}, len: {len(l_text)}")
         if len(l_text) < self.window_size: 
             logging.info('Breaking out')
-            breakpoint()
+            #breakpoint()
             return l_idx, l_text, r_idx, r_text, True # breakout as only single sort is required
         p_id, p_text = l_idx[self.cutoff], l_text[self.cutoff]
 
         c_idx, c_text = l_idx[:self.cutoff], l_text[:self.cutoff] # create initial < p
         b_idx, b_text = l_idx[self.cutoff+1:], l_text[self.cutoff+1:] # create initial > p
-        breakpoint()
+        #breakpoint()
         sub_window_size = self.window_size - 1 # account for addition of p
 
         while len(c_text) <= self.buffer and len(r_text) >= sub_window_size:
@@ -135,7 +135,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
             order = np.array(self.score(**kwargs))
             orig_idxs = np.arange(self.window_size)
             l_idx[orig_idxs], l_text[orig_idxs],  = l_idx[order], l_text[order]
-            breakpoint()
+            #breakpoint()
             p_idx = np.where(l_idx == p_id)[0][0] # find index of pivot id
             # add left of pivot to candidates and right of pivot to backfill
             c_text = concat([c_text, l_text[:p_idx]])
