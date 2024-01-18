@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+import logging
 from typing import List
 import pandas as pd
 import pyterrier as pt 
@@ -84,6 +85,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
         b : current backfill
         p : current pivot
         '''
+        logging.info(f"Processing query {qid} with {len(doc_idx)} documents")
         l_text, l_idx = doc_texts[:self.window_size], doc_idx[:self.window_size]
         r_text, r_idx = doc_texts[self.window_size:], doc_idx[self.window_size:]
 
@@ -93,11 +95,11 @@ class ListWiseTransformer(pt.Transformer, ABC):
             'doc_text': l_text,
             'doc_idx': l_idx,
             'start_idx': 0,
-            'end_idx': self.window_size,
-            'window_len': self.window_size
+            'end_idx': len(l_text),
+            'window_len': len(l_text)
         }
         order = self.score(**kwargs)
-        orig_idxs = np.arange(self.window_size)
+        orig_idxs = np.arange(len(l_text))
         l_text[orig_idxs], l_idx[orig_idxs] = l_text[order], l_idx[order]
 
         p_id, p_text = doc_idx[order[self.cutoff]], doc_texts[order[self.cutoff]]
