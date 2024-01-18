@@ -139,9 +139,9 @@ class ListWiseTransformer(pt.Transformer, ABC):
             b_idx = concat([b_idx, l_idx[p_idx+1:]])
         
         # we have found no candidates better than p
-        if len(c_text) == self.cutoff - 1: return concat([c_idx, [p_idx]]), concat([c_text, [p_text]]), b_idx, b_text, True 
+        if len(c_text) == self.cutoff - 1: return concat([c_idx, [p_id]]), concat([c_text, [p_text]]), b_idx, b_text, True 
         # we have found candidates better than p
-        return c_idx, c_text, concat([[p_idx], b_idx]), concat([[p_text], b_text]), False
+        return c_idx, c_text, concat([[p_id], b_idx]), concat([[p_text], b_text]), False
     
     def pivot(self, query : str, query_results : pd.DataFrame):
         qid = query_results['qid'].iloc[0]
