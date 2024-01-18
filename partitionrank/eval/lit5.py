@@ -23,7 +23,6 @@ def score_lit_t5(dataset : str, qrels : str, topics_or_res : str, output_path : 
     pipe = pt.text.get_text(dataset, "text") >> model
 
     res = pipe.transform(topics_or_res)
-    print(res.head())
 
     # write model.log to log_file as a dict json dump
 

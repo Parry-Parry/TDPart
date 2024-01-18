@@ -16,9 +16,9 @@ def main(eval :str, run_dir : str, out_dir : str = None):
     evaluate = evaluator(metrics, qrels)
     df = []
     for file in files:
-        if file.endswith(".gz"):
+        if file.endswith(".gz") or file.endswith(".tsv"):
             print(file)
-            name = file.strip('.gz')
+            name = file.replace('.gz', '').replace('.tsv', '')
             run = read_trec_run(join(run_dir, file))
             res = evaluate.calc_aggregate(run)
             res = {str(k) : v for k, v in res.items()}
