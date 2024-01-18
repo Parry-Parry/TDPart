@@ -86,8 +86,8 @@ class ListWiseTransformer(pt.Transformer, ABC):
         p : current pivot
         '''
         logging.info(f"Processing query {qid} with {len(doc_idx)} documents")
-        l_text, l_idx = doc_texts[:self.window_size], doc_idx[:self.window_size]
-        r_text, r_idx = doc_texts[self.window_size:], doc_idx[self.window_size:]
+        l_idx, l_text,  = doc_idx[:self.window_size], doc_texts[:self.window_size]
+        r_idx, r_text,  = doc_idx[self.window_size:], doc_texts[self.window_size:]
 
         kwargs = {
             'qid': qid,
@@ -98,17 +98,18 @@ class ListWiseTransformer(pt.Transformer, ABC):
             'end_idx': len(l_text), # initial sort may be less than window size
             'window_len': len(l_text)
         }
+
         order = np.array(self.score(**kwargs))
         orig_idxs = np.arange(len(l_text))
-        l_text[orig_idxs], l_idx[orig_idxs] = l_text[order], l_idx[order]
+        l_idx[orig_idxs], l_text[orig_idxs],  = l_idx[order], l_text[order]
         logging.info(f"Initial sort complete for query {qid}, len: {len(l_text)}")
         if len(l_text) < self.window_size: 
             logging.info('Breaking out')
             return l_idx, l_text, r_idx, r_text, True # breakout as only single sort is required
-        p_text, p_id = l_text[order[self.cutoff]], l_idx[order[self.cutoff]]
+        p_id, p_text = l_idx[order[self.cutoff]], l_text[order[self.cutoff]]
 
-        c_text, c_idx = l_text[order[:self.cutoff]], l_idx[order[:self.cutoff]]
-        b_text, b_idx = l_text[order[self.cutoff+1:]], l_idx[order[self.cutoff+1:]]
+        c_idx, c_text = l_idx[order[:self.cutoff]], l_text[order[:self.cutoff]]
+        b_idx, b_text = l_idx[order[self.cutoff+1:]], l_text[order[self.cutoff+1:]]
 
         sub_window_size = self.window_size - 1
 
@@ -132,7 +133,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
 
             order = np.array(self.score(**kwargs))
             orig_idxs = np.arange(self.window_size)
-            l_text[orig_idxs], l_idx[orig_idxs] = l_text[order], l_idx[order]
+            l_idx[orig_idxs], l_text[orig_idxs],  = l_idx[order], l_text[order]
 
             p_idx = np.where(l_idx == p_id)[0][0] # find index of pivot id
             # add left of pivot to candidates and right of pivot to backfill
