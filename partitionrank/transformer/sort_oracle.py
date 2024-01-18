@@ -16,6 +16,6 @@ class SortOracleTransformer(ListWiseTransformer):
     
     def score(self, qid : str, doc_text, **kwargs):
         self.current_query.inferences += 1
-        doc_idx = doc_idx.tolist()
+        doc_text = doc_text.tolist()
         order = sorted(range(len(doc_text)), key=lambda k: doc_text[k], reverse=True)
         return order
