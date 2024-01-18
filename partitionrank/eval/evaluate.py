@@ -6,8 +6,9 @@ from ir_measures import *
 import ir_datasets as irds
 import pandas as pd
 
-def main(eval :str, run_dir : str, out_dir : str):
-    os.makedirs(out_dir, exist_ok=True)
+def main(eval :str, run_dir : str, out_dir : str = None):
+    if out_dir is None: out_dir = run_dir   
+    else: os.makedirs(out_dir, exist_ok=True)
     files = [f for f in os.listdir(run_dir) if os.path.isfile(join(run_dir, f))]
     ds = irds.load(eval)
     qrels = ds.qrels_iter()

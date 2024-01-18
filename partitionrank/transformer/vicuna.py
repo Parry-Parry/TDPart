@@ -47,4 +47,4 @@ class RankVicuna(ListWiseTransformer):
         output = [int(x)-1 for x in output.split()] # convert to integer
         output = list({x: 0 for x in output if 0 <= x < window_len}.keys()) # remove duplicates (but keep order) and remove anything out of range
         order = output + [i for i in range(window_len) if i not in output] # backfill missing passages
-        return np.array(order)
+        return order

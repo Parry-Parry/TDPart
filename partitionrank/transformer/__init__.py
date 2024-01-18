@@ -98,7 +98,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
             'end_idx': len(l_text), # initial sort may be less than window size
             'window_len': len(l_text)
         }
-        order = self.score(**kwargs)
+        order = np.array(self.score(**kwargs))
         orig_idxs = np.arange(len(l_text))
         l_text[orig_idxs], l_idx[orig_idxs] = l_text[order], l_idx[order]
         logging.info(f"Initial sort complete for query {qid}, len: {len(l_text)}")
@@ -130,7 +130,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
                 'window_len': self.window_size
             }
 
-            order = self.score(**kwargs)
+            order = np.array(self.score(**kwargs))
             orig_idxs = np.arange(self.window_size)
             l_text[orig_idxs], l_idx[orig_idxs] = l_text[order], l_idx[order]
 
@@ -186,11 +186,34 @@ class ListWiseTransformer(pt.Transformer, ABC):
             'end_idx': end_idx,
             'window_len': window_len
             }
-            order = self.score(**kwargs)
-            new_idxs = start_idx + np.array(order)
+            order = np.array(self.score(**kwargs))
+            new_idxs = start_idx + order
             orig_idxs = np.arange(start_idx, end_idx)
             doc_idx[orig_idxs] = doc_idx[new_idxs]
             doc_texts[orig_idxs] = doc_texts[new_idxs]
+        self.log.queries.append(self.current_query)
+        return doc_idx, doc_texts
+    
+    def single_window(self, query : str, query_results : pd.DataFrame):
+        qid = query_results['qid'].iloc[0]
+        self.current_query = QueryLog(qid=qid)
+        query_results = query_results.sort_values('score', ascending=False).iloc[:self.window_size]
+        doc_idx = query_results['docno'].to_numpy()
+        doc_texts = query_results['text'].to_numpy()
+        
+        kwargs = {
+        'qid': qid,
+        'query': query,
+        'doc_text': doc_texts,
+        'doc_idx': doc_idx,
+        'start_idx': 0,
+        'end_idx': len(doc_texts),
+        'window_len': len(doc_texts)
+        }
+        order = np.array(self.score(**kwargs))
+        orig_idxs = np.arange(0, len(doc_texts))
+        doc_idx[orig_idxs] = doc_idx[order]
+        doc_texts[orig_idxs] = doc_texts[order]
         self.log.queries.append(self.current_query)
         return doc_idx, doc_texts
 
