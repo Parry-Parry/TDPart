@@ -105,7 +105,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
         if len(l_text) < self.window_size: 
             logging.info('Breaking out')
             return l_idx, l_text, r_idx, r_text, True # breakout as only single sort is required
-        p_id, p_text = l_text[order[self.cutoff]], l_text[order[self.cutoff]]
+        p_text, p_id = l_text[order[self.cutoff]], l_idx[order[self.cutoff]]
 
         c_text, c_idx = l_text[order[:self.cutoff]], l_idx[order[:self.cutoff]]
         b_text, b_idx = l_text[order[self.cutoff+1:]], l_idx[order[self.cutoff+1:]]
@@ -218,7 +218,6 @@ class ListWiseTransformer(pt.Transformer, ABC):
         return doc_idx, doc_texts
 
     def transform(self, inp : pd.DataFrame):
-        print(inp.head())
         res = {
             'qid': [],
             'query': [],
