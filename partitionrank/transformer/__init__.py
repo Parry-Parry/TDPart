@@ -95,17 +95,17 @@ class ListWiseTransformer(pt.Transformer, ABC):
             'doc_text': l_text,
             'doc_idx': l_idx,
             'start_idx': 0,
-            'end_idx': len(l_text),
+            'end_idx': len(l_text), # initial sort may be less than window size
             'window_len': len(l_text)
         }
         order = self.score(**kwargs)
         orig_idxs = np.arange(len(l_text))
         l_text[orig_idxs], l_idx[orig_idxs] = l_text[order], l_idx[order]
-        if len(l_text) < self.cutoff: return l_idx, l_text, r_idx, r_text, True # breakout as we have found no candidates better than p
-        p_id, p_text = doc_idx[order[self.cutoff]], doc_texts[order[self.cutoff]]
+        if len(l_text) < self.window_size: return l_idx, l_text, r_idx, r_text, True # breakout as only single sort is required
+        p_id, p_text = l_text[order[self.cutoff]], l_text[order[self.cutoff]]
 
-        c_text, c_idx = doc_idx[order[:self.cutoff]], doc_texts[order[:self.cutoff]]
-        b_text, b_idx = doc_idx[order[self.cutoff+1:]], doc_texts[order[self.cutoff+1:]]
+        c_text, c_idx = l_text[order[:self.cutoff]], l_text[order[:self.cutoff]]
+        b_text, b_idx = l_text[order[self.cutoff+1:]], l_text[order[self.cutoff+1:]]
 
         sub_window_size = self.window_size - 1
 
