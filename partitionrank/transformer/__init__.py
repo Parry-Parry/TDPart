@@ -101,7 +101,10 @@ class ListWiseTransformer(pt.Transformer, ABC):
         order = self.score(**kwargs)
         orig_idxs = np.arange(len(l_text))
         l_text[orig_idxs], l_idx[orig_idxs] = l_text[order], l_idx[order]
-        if len(l_text) < self.window_size: return l_idx, l_text, r_idx, r_text, True # breakout as only single sort is required
+        logging.info(f"Initial sort complete for query {qid}, len: {len(l_text)}")
+        if len(l_text) < self.window_size: 
+            logging.info('Breaking out')
+            return l_idx, l_text, r_idx, r_text, True # breakout as only single sort is required
         p_id, p_text = l_text[order[self.cutoff]], l_text[order[self.cutoff]]
 
         c_text, c_idx = l_text[order[:self.cutoff]], l_text[order[:self.cutoff]]
