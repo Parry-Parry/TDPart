@@ -23,6 +23,7 @@ class LLMRanker:
         return [*map(int, list(set(all_num)))]
     
     def logic(self, texts : List[str]):
+        if isinstance(texts, str): texts = [texts]
         inputs = self.tokenizer(texts)
         inputs = {k: torch.tensor(v).to(self.device) for k, v in inputs.items()}
         texts = self.model.generate(**inputs, generation_config=self.generation_config)
