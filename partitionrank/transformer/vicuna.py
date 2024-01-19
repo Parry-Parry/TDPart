@@ -26,13 +26,5 @@ class RankVicuna(ListWiseTransformer):
     
     def score(self, query : str, doc_text : List[str], window_len : int, **kwargs):
         self.current_query.inferences += 1
-        input = self.prompt(query=query, texts=doc_text.tolist(), num=window_len)
-
-        outputs = self.model(input)
-
-        
-        output = re.sub(r'[^0-9]', ' ', outputs) # clean outputs (keep only digits)
-        output = [int(x)-1 for x in output.split()] # convert to integer
-        output = list({x: 0 for x in output if 0 <= x < window_len}.keys()) # remove duplicates (but keep order) and remove anything out of range
-        order = output + [i for i in range(window_len) if i not in output] # backfill missing passages
+        order = self.chain(query=query, texts=doc_text.tolist(), num=window_len)
         return order
