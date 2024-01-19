@@ -1,11 +1,8 @@
-import re
 from typing import Optional, Union, List
-
 import numpy as np
 from partitionrank.transformer import ListWiseTransformer
 from partitionrank.modelling.prompt import RankPrompt
 from partitionrank.modelling.base import LLMRanker
-from transformers import GenerationConfig
 import torch
 
 class RankVicuna(ListWiseTransformer):
