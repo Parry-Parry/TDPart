@@ -13,17 +13,15 @@ class DocumentFormatter(Link):
 
 class RankPrompt(Link):
     def __init__(self, 
+                 model : str,
                  components : List[str],
                  doc_formatter : bool = False,
-                 model : str = None,
                  max_length : int = 200,
                  rankllm : bool = False) -> None:
         super().__init__(name='RankPrompt')
-        if model:
-            template = get_conversation_template(model) 
-            if rankllm: template.set_system_message("You are RankLLM, an intelligent assistant that can rank passages based on their relevancy to the query.")
-            self.prompt = '\n'.join([*components])
-        else: self.prompt = '\n'.join(components)
+        template = get_conversation_template(model) 
+        if rankllm: template.set_system_message("You are RankLLM, an intelligent assistant that can rank passages based on their relevancy to the query.")
+        self.prompt = '\n'.join(components)
         self.template = template
         self.formatter = DocumentFormatter(max_length)
         self.use_formatter = doc_formatter
