@@ -18,7 +18,7 @@ class RankPrompt:
                  rankllm : bool = False) -> None:
         template = get_conversation_template(model) 
         if rankllm: template.set_system_message("You are RankLLM, an intelligent assistant that can rank passages based on their relevancy to the query.")
-        self.prompt = '\n'.join(components)
+        self.prompt = '\n\n'.join(components)
         self.template = template
         self.formatter = DocumentFormatter(max_length)
         self.use_formatter = doc_formatter
@@ -30,4 +30,4 @@ class RankPrompt:
         input_context = self.prompt.format(**kwargs)
         template = self.template.copy()
         template.append_message(template.roles[0], input_context)
-        return template.get_prompt() + " ASSISTANT:"
+        return template.get_prompt() + "\nASSISTANT:"
