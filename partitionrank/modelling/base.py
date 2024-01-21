@@ -5,8 +5,9 @@ from transformers.generation import GenerationConfig
 import re
 
 class LLMRanker:
-    def __init__(self, checkpoint : Any, max_new_tokens : int = 200, n_gpu : Optional[int] = None) -> None:
-        device = 'cuda' if n_gpu else 'cpu'
+    def __init__(self, checkpoint : Any, max_new_tokens : int = 200, n_gpu : Optional[int] = None, device : Any = None) -> None:
+        if not device:
+            device = 'cuda' if n_gpu else 'cpu'
         self.device = device
         self.model, self.tokenizer = load_model(checkpoint, device=device, n_gpu=n_gpu)
         
