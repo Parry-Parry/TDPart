@@ -23,5 +23,6 @@ class RankVicuna(ListWiseTransformer):
     
     def score(self, query : str, doc_text : List[str], window_len : int, **kwargs):
         self.current_query.inferences += 1
-        order = self.chain(query=query, texts=doc_text.tolist(), num=window_len)
+        prompt = self.prompt(query=query, texts=doc_text.tolist())
+        order = self.model(prompt=prompt, num=window_len)
         return order

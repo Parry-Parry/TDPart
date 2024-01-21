@@ -1,11 +1,9 @@
 from typing import List, Any, Optional
 import torch
-from lightchain import chainable
 from fastchat.model import load_model
 from transformers.generation import GenerationConfig
 import re
 
-@chainable
 class LLMRanker:
     def __init__(self, checkpoint : Any, max_new_tokens : int = 200, n_gpu : Optional[int] = None) -> None:
         device = 'cuda' if n_gpu else 'cpu'

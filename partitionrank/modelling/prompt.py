@@ -1,8 +1,7 @@
 from typing import Any, List
-from lightchain import Link
 from fastchat.model import get_conversation_template
 
-class DocumentFormatter(Link):
+class DocumentFormatter:
     def __init__(self, max_length : int, **kwargs) -> None:
         super().__init__(name='DocumentFormatter', **kwargs)
         self.max_length = max_length
@@ -11,7 +10,7 @@ class DocumentFormatter(Link):
         texts = [text[:self.max_length] for text in texts]
         return '\n'.join([f'[{i}] {text}' for i, text in enumerate(texts)])
 
-class RankPrompt(Link):
+class RankPrompt:
     def __init__(self, 
                  model : str,
                  components : List[str],
@@ -33,4 +32,4 @@ class RankPrompt(Link):
         input_context = self.prompt.format(**kwargs)
         template = self.template.copy()
         template.append_message(template.roles[0], input_context)
-        return template.get_prompt() + " ASSISTANT:", kwargs.pop('num')
+        return template.get_prompt() + " ASSISTANT:"
