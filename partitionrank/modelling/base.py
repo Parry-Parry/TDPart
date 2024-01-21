@@ -25,7 +25,7 @@ class LLMRanker:
         order = output + [i for i in range(length) if i not in output] # backfill missing passages
         return order
     
-    def logic(self, text :str, window_len : int):
+    def logic(self, text : str, window_len : int):
         if isinstance(text, str): text = [text]
         inputs = self.tokenizer(text)
         inputs = {k: torch.tensor(v).to(self.device) for k, v in inputs.items()}

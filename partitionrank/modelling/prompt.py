@@ -31,6 +31,6 @@ class RankPrompt(Link):
             texts = kwargs.pop('texts')
             kwargs['documents'] = self.formatter(texts)
         input_context = self.prompt.format(**kwargs)
-        template = self.template
+        template = self.template.copy()
         template.append_message(template.roles[0], input_context)
         return template.get_prompt() + " ASSISTANT:", kwargs.pop('num')
