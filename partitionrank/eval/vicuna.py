@@ -18,7 +18,7 @@ def score_zephyr(dataset : str,
                  mode : str = 'sliding', 
                  buffer : int = 20, 
                  max_iters : int = 100,
-                 n_gpus : int = 1,
+                 n_gpu : int = 1,
                  **kwargs):
     topics_or_res = read_results(topics_or_res)
     dataset = pt.get_dataset(dataset)
@@ -29,7 +29,7 @@ def score_zephyr(dataset : str,
     out_file = join(output_path, f"vicuna.{mode}.{buffer}.{window_size}.{stride}.tsv.gz")
     log_file = join(output_path, f"vicuna.{mode}.{buffer}.{window_size}.{stride}.log")
     logging.info("Loading vicuna model")
-    model = RankVicuna(device='cuda', n_gpus=n_gpus, mode=mode, window_size=window_size, buffer=buffer, stride=stride, max_iters=max_iters)
+    model = RankVicuna(device='cuda', n_gpu=n_gpu, mode=mode, window_size=window_size, buffer=buffer, stride=stride, max_iters=max_iters)
     pipe = pt.text.get_text(dataset, "text") >> model
 
     res = pipe.transform(topics_or_res)
