@@ -17,7 +17,6 @@ class RankPrompt:
                  doc_formatter : bool = False,
                  max_length : int = 200,
                  rankllm : bool = False) -> None:
-        super().__init__(name='RankPrompt')
         template = get_conversation_template(model) 
         if rankllm: template.set_system_message("You are RankLLM, an intelligent assistant that can rank passages based on their relevancy to the query.")
         self.prompt = '\n'.join(components)
@@ -25,7 +24,7 @@ class RankPrompt:
         self.formatter = DocumentFormatter(max_length)
         self.use_formatter = doc_formatter
     
-    def logic(self, **kwargs) -> Any:
+    def __call__(self, **kwargs) -> Any:
         if self.use_formatter:
             texts = kwargs.pop('texts')
             kwargs['documents'] = self.formatter(texts)
