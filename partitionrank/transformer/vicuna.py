@@ -18,7 +18,7 @@ class RankVicuna(ListWiseTransformer):
                  **kwargs) -> None:
         super().__init__(**kwargs)
 
-        self.prompt = RankPrompt([self.PRE, '{documents}', self.POST], doc_formatter=True, model=self.CHECKPOINT, max_length=self.MAX_LENGTH)
+        self.prompt = RankPrompt(components=[self.PRE, '{documents}', self.POST], doc_formatter=True, model=self.CHECKPOINT, max_length=self.MAX_LENGTH)
         self.model = LLMRanker(checkpoint=self.CHECKPOINT, device=device, n_gpu=n_gpu)
     
     def score(self, query : str, doc_text : List[str], window_len : int, **kwargs):
