@@ -14,6 +14,7 @@ class LLMRanker:
         config = GenerationConfig.from_model_config(self._model.config)
         config.max_new_tokens = max_new_tokens
         config.min_length = 1
+        config.top_p = 1.0
         config.do_sample = False
         self.generation_config = config
 
