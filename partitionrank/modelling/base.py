@@ -1,3 +1,4 @@
+import logging
 from typing import List, Any, Optional
 import torch
 from fastchat.model import load_model
@@ -33,4 +34,5 @@ class LLMRanker:
         if self._model.config.is_encoder_decoder: output_ids = output_ids[0]
         else: output_ids = output_ids[0][len(inputs["input_ids"][0]):]
         outputs = self._tokenizer.decode(output_ids, skip_special_tokens=True, spaces_between_special_tokens=False)
+        logging.info(outputs)
         return self.parse_output(outputs, window_len)
