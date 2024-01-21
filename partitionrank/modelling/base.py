@@ -9,7 +9,7 @@ class LLMRanker:
         if not device:
             device = 'cuda' if n_gpu else 'cpu'
         self.device = device
-        self.model, self.tokenizer = load_model(checkpoint, device=device, num_gpus=n_gpu)
+        self._model, self._tokenizer = load_model(checkpoint, device=device, num_gpus=n_gpu)
         
         config = GenerationConfig.from_model_config(self.model.config)
         config.max_new_tokens = max_new_tokens
@@ -26,10 +26,10 @@ class LLMRanker:
     
     def __call__(self, text : str, window_len : int):
         if isinstance(text, str): text = [text]
-        inputs = self.tokenizer(text)
+        inputs = self._tokenizer(text)
         inputs = {k: torch.tensor(v).to(self.device) for k, v in inputs.items()}
-        output_ids = self.model.generate(**inputs, generation_config=self.generation_config)
-        if self.model.config.is_encoder_decoder: output_ids = output_ids[0]
+        output_ids = self._model.generate(**inputs, generation_config=self.generation_config)
+        if self._model.config.is_encoder_decoder: output_ids = output_ids[0]
         else: output_ids = output_ids[0][len(inputs["input_ids"][0]):]
         outputs = self._tokenizer.decode(output_ids, skip_special_tokens=True, spaces_between_special_tokens=False)
         return self.parse_output(outputs, window_len)
