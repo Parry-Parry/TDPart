@@ -18,7 +18,7 @@ class RankZephyr(ListWiseTransformer):
         super().__init__(**kwargs)
 
         self.prompt = RankPrompt([self.PRE, '{documents}', self.POST], doc_formatter=True, model=self.CHECKPOINT, max_length=self.MAX_LENGTH)
-        self.model = LLMRanker(checkpoint=self.CHECKPOINT, device=device, n_gpu=n_gpu, fast_chat=True)
+        self.model = LLMRanker(checkpoint=self.CHECKPOINT, device=device, n_gpu=n_gpu)
         self.chain = self.prompt >> self.model
     
     def score(self, query : str, doc_text : List[str], window_len : int, **kwargs):
