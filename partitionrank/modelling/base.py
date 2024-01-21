@@ -29,7 +29,7 @@ class LLMRanker:
         inputs = self.tokenizer(text)
         inputs = {k: torch.tensor(v).to(self.device) for k, v in inputs.items()}
         output_ids = self.model.generate(**inputs, generation_config=self.generation_config)
-        if self._llm.config.is_encoder_decoder: output_ids = output_ids[0]
+        if self.model.config.is_encoder_decoder: output_ids = output_ids[0]
         else: output_ids = output_ids[0][len(inputs["input_ids"][0]):]
         outputs = self._tokenizer.decode(output_ids, skip_special_tokens=True, spaces_between_special_tokens=False)
         return self.parse_output(outputs, window_len)
