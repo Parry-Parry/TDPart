@@ -17,7 +17,7 @@ class RankZephyr(ListWiseTransformer):
                  **kwargs) -> None:
         super().__init__(**kwargs)
 
-        self.prompt = RankPrompt([self.PRE, '{documents}', self.POST], doc_formatter=True, model=self.CHECKPOINT, max_length=self.MAX_LENGTH)
+        self.prompt = RankPrompt([self.PRE, '{documents}', self.POST], doc_formatter=True, model=self.CHECKPOINT, max_length=self.MAX_LENGTH, rankllm=True)
         self.model = LLMRanker(checkpoint=self.CHECKPOINT, device=device, n_gpu=n_gpu)
         self.chain = self.prompt >> self.model
     

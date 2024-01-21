@@ -25,12 +25,12 @@ class LLMRanker:
         order = output + [i for i in range(length) if i not in output] # backfill missing passages
         return order
     
-    def logic(self, texts : List[str], window_len : List[int]):
-        if isinstance(texts, str): texts, window_len = [texts], [window_len]
-        inputs = self.tokenizer(texts)
+    def logic(self, text :str, window_len : int):
+        if isinstance(text, str): text = [text]
+        inputs = self.tokenizer(text)
         inputs = {k: torch.tensor(v).to(self.device) for k, v in inputs.items()}
-        texts = self.model.generate(**inputs, generation_config=self.generation_config)
+        output_ids = self.model.generate(**inputs, generation_config=self.generation_config)
         if self._llm.config.is_encoder_decoder: output_ids = output_ids[0]
         else: output_ids = output_ids[0][len(inputs["input_ids"][0]):]
         outputs = self._tokenizer.decode(output_ids, skip_special_tokens=True, spaces_between_special_tokens=False)
-        return [*map(lambda x, y : self.parse_output(x, y), zip(outputs, window_len))]
+        return self.parse_output(outputs, window_len)

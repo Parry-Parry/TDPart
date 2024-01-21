@@ -1,6 +1,5 @@
 from typing import List
 import torch
-import numpy as np
 import re
 from transformers import T5Tokenizer
 from pyterrier_t5.modeling_fid import FiD

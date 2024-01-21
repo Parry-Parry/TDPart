@@ -16,12 +16,15 @@ class RankPrompt(Link):
                  components : List[str],
                  doc_formatter : bool = False,
                  model : str = None,
-                 max_length : int = 200) -> None:
+                 max_length : int = 200,
+                 rankllm : bool = False) -> None:
         super().__init__(name='RankPrompt')
         if model:
             template = get_conversation_template(model) 
-            self.prompt = '\n'.join([template, *components])
+            if rankllm: template.set_system_message("You are RankLLM, an intelligent assistant that can rank passages based on their relevancy to the query.")
+            self.prompt = '\n'.join([*components])
         else: self.prompt = '\n'.join(components)
+        self.template = template
         self.formatter = DocumentFormatter(max_length)
         self.use_formatter = doc_formatter
     
@@ -29,4 +32,7 @@ class RankPrompt(Link):
         if self.use_formatter:
             texts = kwargs.pop('texts')
             kwargs['documents'] = self.formatter(texts)
-        return self.prompt.format(**kwargs)
+        input_context = self.prompt.format(**kwargs)
+        template = self.template
+        template.append_message(template.roles[0], input_context)
+        return template.get_prompt() + " ASSISTANT:", kwargs.pop('num')
