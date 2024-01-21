@@ -3,10 +3,9 @@ from fastchat.model import get_conversation_template
 
 class DocumentFormatter:
     def __init__(self, max_length : int, **kwargs) -> None:
-        super().__init__(name='DocumentFormatter', **kwargs)
         self.max_length = max_length
     
-    def logic(self, texts : List[str]) -> str:
+    def __call__(self, texts : List[str]) -> str:
         texts = [text[:self.max_length] for text in texts]
         return '\n'.join([f'[{i}] {text}' for i, text in enumerate(texts)])
 
