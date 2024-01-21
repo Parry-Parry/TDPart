@@ -70,7 +70,8 @@ class ListWiseTransformer(pt.Transformer, ABC):
 
         self.process = {
             'sliding': self.sliding_window,
-            'pivot': self.pivot
+            'pivot': self.pivot,
+            'single': self.single_window
         }[mode]
     
     @abstractmethod
@@ -199,9 +200,13 @@ class ListWiseTransformer(pt.Transformer, ABC):
     def single_window(self, query : str, query_results : pd.DataFrame):
         qid = query_results['qid'].iloc[0]
         self.current_query = QueryLog(qid=qid)
-        query_results = query_results.sort_values('score', ascending=False).iloc[:self.window_size]
-        doc_idx = query_results['docno'].to_numpy()
-        doc_texts = query_results['text'].to_numpy()
+        query_results = query_results.sort_values('score', ascending=False)
+        candidates = query_results.iloc[:self.window_size]
+        rest = query_results.iloc[self.window_size:]
+        doc_idx = candidates['docno'].to_numpy()
+        doc_texts = candidates['text'].to_numpy()
+        rest_idx = rest['docno'].to_numpy()
+        rest_texts = rest['text'].to_numpy()
         
         kwargs = {
         'qid': qid,
@@ -217,7 +222,8 @@ class ListWiseTransformer(pt.Transformer, ABC):
         doc_idx[orig_idxs] = doc_idx[order]
         doc_texts[orig_idxs] = doc_texts[order]
         self.log.queries.append(self.current_query)
-        return doc_idx, doc_texts
+
+        return concat([doc_idx, rest_idx]), concat([doc_texts, rest_texts])
 
     def transform(self, inp : pd.DataFrame):
         res = {

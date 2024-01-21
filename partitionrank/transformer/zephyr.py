@@ -22,6 +22,6 @@ class RankZephyr(ListWiseTransformer):
     
     def score(self, query : str, doc_text : List[str], window_len : int, **kwargs):
         self.current_query.inferences += 1
-        prompt = self.prompt(query=query, texts=doc_text.tolist())
+        prompt = self.prompt(query=query, texts=doc_text.tolist(), num=window_len)
         order = self.model(prompt=prompt, num=window_len)
         return order
