@@ -11,7 +11,7 @@ class LLMRanker:
         self.device = device
         self._model, self._tokenizer = load_model(checkpoint, device=device, num_gpus=n_gpu)
         
-        config = GenerationConfig.from_model_config(self.model.config)
+        config = GenerationConfig.from_model_config(self._model.config)
         config.max_new_tokens = max_new_tokens
         config.min_length = 1
         config.do_sample = False
