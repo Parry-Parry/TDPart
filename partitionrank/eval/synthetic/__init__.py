@@ -15,6 +15,12 @@ class Order(Enum):
     ASC = 1
     DESC = 2
 
+RATIOS = {
+        5 : range(0.2, 1.0, 0.2),
+        10 : range(0.1, 1.0, 0.1),
+        20 : range(0.05, 1.0, 0.05),
+    }
+
 def sample(qrels, qid, num_items : int = 20, order = Order.RANDOM, ratio : int = 1):
     ratio = int(ratio * num_items)
     qrels = qrels[qrels['query_id'] == qid]
@@ -32,6 +38,7 @@ def sample(qrels, qid, num_items : int = 20, order = Order.RANDOM, ratio : int =
     return qrels
 
 def create_synthetic(out_path : str, datasets : List[str], order : int, window_len : int, n_samples : int = 10, model = None):
+
     model = LOAD_FUNCS[model](mode='single', window_size=window_len)
     eval = evaluator([nDCG@10, nDCG@5, nDCG@1], pd.DataFrame(irds.load(MARCO).qrels_iter()))
     order = Order(order)
@@ -58,7 +65,7 @@ def create_synthetic(out_path : str, datasets : List[str], order : int, window_l
     for qid, qrel in all_qrels.groupby('qid'):
         query = all_queries[qid]
         for i in range(n_samples):
-            for ratio in range(0.05, 1.0, 0.05):
+            for ratio in RATIOS[window_len]:
                 sample = sample(qrel, qid, window_len, order, ratio)
                 sample['text'] = sample['docno'].apply(lambda x: all_docs[str(x)])
                 sample['query'] = query
