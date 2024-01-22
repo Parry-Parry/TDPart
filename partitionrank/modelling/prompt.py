@@ -1,5 +1,7 @@
-from typing import Any, List
+from typing import Any, List, Optional
 from fastchat.model import get_conversation_template
+from ftfy import fix_text
+import re 
 
 class DocumentFormatter:
     def __init__(self, max_length : int, **kwargs) -> None:
@@ -9,25 +11,54 @@ class DocumentFormatter:
         texts = [text[:self.max_length] for text in texts]
         return '\n'.join([f'[{i}] {text}' for i, text in enumerate(texts)])
 
+def replace_number(s):
+    return re.sub(r"\[(\d+)\]", r"(\1)", s)
+
 class RankPrompt:
+    SYSTEM_MESSAGE = "You are RankLLM, an intelligent assistant that can rank passages based on their relevancy to the query."
+    PRE = "I will provide you with {num} passages, each indicated by a numerical identifier []. Rank the passages based on their relevance to the search query: {query}.\n"
+    POST = "Search Query: {query}.\nRank the {num} passages above based on their relevance to the search query. All the passages should be included and listed using identifiers, in descending order of relevance. The output format should be [] > [], e.g., {example_ordering}, Only respond with the ranking results, do not say any word or explain."
+    MAX_TOKENS = 4096
     def __init__(self, 
                  model : str,
-                 components : List[str],
-                 doc_formatter : bool = False,
-                 max_length : int = 200,
+                 tokenizer,
+                 max_length : int = 300,
                  rankllm : bool = False) -> None:
-        template = get_conversation_template(model) 
-        if rankllm: template.set_system_message("You are RankLLM, an intelligent assistant that can rank passages based on their relevancy to the query.")
-        self.prompt = '\n\n'.join(components)
-        self.template = template
-        self.formatter = DocumentFormatter(max_length)
-        self.use_formatter = doc_formatter
+        self.rankllm = rankllm
+        self.model = model
+        self.max_length = max_length
+        self.tokenizer = tokenizer
     
-    def __call__(self, **kwargs) -> Any:
-        if self.use_formatter:
-            texts = kwargs.pop('texts')
-            kwargs['documents'] = self.formatter(texts)
-        input_context = self.prompt.format(**kwargs)
-        template = self.template.copy()
-        template.append_message(template.roles[0], input_context)
-        return template.get_prompt() + "\nASSISTANT:"
+    def get_num_tokens(self, text : str) -> int:
+        return len(self.tokenizer.encode(text))
+
+    def __call__(self, query, texts, num, **kwargs) -> str:
+        while True:
+            conv = get_conversation_template(self._model)
+            if self.rankllm:
+                conv.set_system_message(self.SYSTEM_MESSAGE)
+            prefix = self.PRE.format(query=query, num=num)
+            rank = 0
+            input_context = f"{prefix}\n"
+            for text in texts:
+                rank += 1
+                content = " ".join(text.split()[: int(self.max_length)])
+                input_context += f"[{rank}] {replace_number(content)}\n"
+
+            input_context += self.POST.format(query=query, num=num)
+            conv.append_message(conv.roles[0], input_context)
+            conv.append_message(conv.roles[1], None)
+            prompt = conv.get_prompt()
+            prompt = fix_text(prompt)
+            num_tokens = self.get_num_tokens(prompt)
+            if num_tokens <= self.MAX_TOKENS - self.num_output_tokens(
+                num
+            ):
+                break
+            else:
+                max_length -= max(
+                    1,
+                    (num_tokens - self.MAX_TOKENS + self.num_output_tokens())
+                    // ((num) * 4),
+                )
+        return prompt
