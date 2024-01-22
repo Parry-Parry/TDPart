@@ -34,7 +34,7 @@ class RankPrompt:
 
     def __call__(self, query, texts, num, **kwargs) -> str:
         while True:
-            conv = get_conversation_template(self._model)
+            conv = get_conversation_template(self.model)
             if self.rankllm:
                 conv.set_system_message(self.SYSTEM_MESSAGE)
             prefix = self.PRE.format(query=query, num=num)
