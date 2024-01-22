@@ -30,7 +30,7 @@ def score_model(dataset : str,
     out_file = join(output_path, f"{model_type}.{mode}.{buffer}.{window_size}.{stride}.tsv.gz")
     log_file = join(output_path, f"{model_type}.{mode}.{buffer}.{window_size}.{stride}.log")
     logging.info(f"Loading {model_type} model")
-    pipe = LOAD_FUNCS[model_type](dataset, qrels=qrels, model_path=checkpoint, n_gpu=n_gpu, mode=mode, window_size=window_size, buffer=buffer, stride=stride, max_iters=max_iters)
+    pipe = LOAD_FUNCS[model_type](dataset, qrels=pd.DataFrame(ds.qrels_iter()), model_path=checkpoint, n_gpu=n_gpu, mode=mode, window_size=window_size, buffer=buffer, stride=stride, max_iters=max_iters)
 
     res = pipe.transform(topics_or_res)
 

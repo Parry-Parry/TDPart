@@ -20,7 +20,6 @@ def load_lit5(dataset : str, **model_kwargs):
 
 def load_oracle(dataset : str, **model_kwargs):
     qrels = model_kwargs.pop('qrels')
-    qrels = pd.DataFrame(qrels.qrels_iter())
     from partitionrank.transformer.oracle import OracleTransformer
     return pt.text.get_text(dataset, "text") >> OracleTransformer(qrels, **model_kwargs)
 
