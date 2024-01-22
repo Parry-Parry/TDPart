@@ -8,7 +8,7 @@ import re
 # Based on https://github.com/castorini/rank_llm/blob/main/src/rank_llm/
 
 class LLMRanker:
-    def __init__(self, checkpoint : Any, n_gpu : Optional[int] = None, device : Any = None) -> None:
+    def __init__(self, checkpoint : Any, n_gpu : Optional[int] = None, device : Any = None, **kwargs) -> None:
         if not device:
             device = 'cuda' if n_gpu else 'cpu'
         self.device = device

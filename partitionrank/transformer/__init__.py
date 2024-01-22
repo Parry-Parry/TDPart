@@ -54,7 +54,8 @@ class ListWiseTransformer(pt.Transformer, ABC):
                  buffer : int = 20, 
                  cutoff : int = 10, 
                  mode='sliding', 
-                 max_iters : int = 100) -> None:
+                 max_iters : int = 100,
+                 **kwargs) -> None:
         super().__init__()
 
         self.window_size = window_size
