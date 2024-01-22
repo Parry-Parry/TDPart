@@ -23,8 +23,6 @@ def load_oracle(dataset : str, **model_kwargs):
     from partitionrank.transformer.oracle import OracleTransformer
     return pt.text.get_text(dataset, "text") >> OracleTransformer(qrels, **model_kwargs)
 
-
-
 LOAD_FUNCS = {
     'gpt': load_rankgpt,
     'vicuna': load_rankvicuna,

@@ -6,6 +6,7 @@ from .. import LOAD_FUNCS
 from ir_measures import *
 from ir_measures import evaluator
 from os.path import join
+from fire import Fire
 
 MARCO = 'irds:msmarco-passage/train/triples-small'
 
@@ -32,7 +33,7 @@ def sample(qrels, qid, num_items : int = 20, order = Order.RANDOM, ratio : int =
 
 def create_synthetic(out_path : str, datasets : List[str], order : int, window_len : int, n_samples : int = 10, model = None):
     model = LOAD_FUNCS[model](mode='single', window_size=window_len)
-    eval = evaluator([NDCG(cutoff=10), NDCG(cutoff=5), NDCG(cutoff=1)], pd.DataFrame(irds.load(MARCO).qrels_iter()))
+    eval = evaluator([nDCG@10, nDCG@5, nDCG@1], pd.DataFrame(irds.load(MARCO).qrels_iter()))
     order = Order(order)
     datasets = {}
     for dataset in datasets:
@@ -49,34 +50,32 @@ def create_synthetic(out_path : str, datasets : List[str], order : int, window_l
         'qid': [],
         'iter': [],
         'ratio': [],
-        'ndcg@10' : [],
-        'ndcg@5' : [],
-        'ndcg@1' : [],
+        'nDCG@10' : [],
+        'nDCG@5' : [],
+        'nDCG@1' : [],
     }
 
     for qid, qrel in all_qrels.groupby('qid'):
         query = all_queries[qid]
         for i in range(n_samples):
             for ratio in range(0.05, 1.0, 0.05):
-                assert len
                 sample = sample(qrel, qid, window_len, order, ratio)
                 sample['text'] = sample['docno'].apply(lambda x: all_docs[str(x)])
                 sample['query'] = query
                 rez = model.transform(sample)
                 metrics = eval.calc_aggregate(rez)
+                metrics = {str(k) : v for k, v in metrics.items()}
 
                 output['qid'].append(qid)
                 output['iter'].append(i)
                 output['ratio'].append(ratio)
-                output['ndcg@10'].append(metrics['ndcg@10'])
-                output['ndcg@5'].append(metrics['ndcg@5'])
-                output['ndcg@1'].append(metrics['ndcg@1'])
+                output['nDCG@10'].append(metrics['nDCG@10'])
+                output['nDCG@5'].append(metrics['nDCG@5'])
+                output['nDCG@1'].append(metrics['nDCG@1'])
     
     out_name = f"{model}.{order.name}.{window_len}.tsv.gz"
 
     pd.DataFrame(output).to_csv(join(out_path, out_name), sep='\t', index=False)
 
-
-
-        
-
+if __name__ == '__main__':
+    Fire(create_synthetic)
