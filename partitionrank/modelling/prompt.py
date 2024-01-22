@@ -17,7 +17,7 @@ def replace_number(s):
 class RankPrompt:
     SYSTEM_MESSAGE = "You are RankLLM, an intelligent assistant that can rank passages based on their relevancy to the query."
     PRE = "I will provide you with {num} passages, each indicated by a numerical identifier []. Rank the passages based on their relevance to the search query: {query}.\n"
-    POST = "Search Query: {query}.\nRank the {num} passages above based on their relevance to the search query. All the passages should be included and listed using identifiers, in descending order of relevance. The output format should be [] > [], e.g., {example_ordering}, Only respond with the ranking results, do not say any word or explain."
+    POST = "Search Query: {query}.\nRank the {num} passages above based on their relevance to the search query. All the passages should be included and listed using identifiers, in descending order of relevance. The output format should be [] > [], e.g., [4] > [2], Only respond with the ranking results, do not say any word or explain."
     MAX_TOKENS = 4096
     def __init__(self, 
                  model : str,
