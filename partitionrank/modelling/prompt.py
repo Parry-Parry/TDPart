@@ -31,6 +31,17 @@ class RankPrompt:
     
     def get_num_tokens(self, text : str) -> int:
         return len(self.tokenizer.encode(text))
+    
+    def num_output_tokens(self, current_window_size: Optional[int] = None) -> int:
+        output_token_estimate = (
+            len(
+                self.tokenizer.encode(
+                    " > ".join([f"[{i+1}]" for i in range(current_window_size)])
+                )
+            )
+            - 1
+        )
+        return output_token_estimate
 
     def __call__(self, query, texts, num, **kwargs) -> str:
         while True:
@@ -51,14 +62,12 @@ class RankPrompt:
             prompt = conv.get_prompt()
             prompt = fix_text(prompt)
             num_tokens = self.get_num_tokens(prompt)
-            if num_tokens <= self.MAX_TOKENS - self.num_output_tokens(
-                num
-            ):
+            if num_tokens <= self.MAX_TOKENS - self.num_output_tokens(num):
                 break
             else:
                 max_length -= max(
                     1,
-                    (num_tokens - self.MAX_TOKENS + self.num_output_tokens())
+                    (num_tokens - self.MAX_TOKENS + self.num_output_tokens(num))
                     // ((num) * 4),
                 )
         return prompt
