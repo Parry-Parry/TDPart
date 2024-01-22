@@ -8,7 +8,7 @@ import torch
 class RankVicuna(ListWiseTransformer):
 
     CHECKPOINT = 'castorini/rank_vicuna_7b_v1'
-    MAX_LENGTH = 200
+    MAX_LENGTH = 300
 
     def __init__(self, 
                  device : Union[str, int] = 'cuda', 
@@ -16,8 +16,8 @@ class RankVicuna(ListWiseTransformer):
                  **kwargs) -> None:
         super().__init__(**kwargs)
 
-        self.prompt = RankPrompt(components=[self.PRE, '{documents}', self.POST], doc_formatter=True, model=self.CHECKPOINT, max_length=self.MAX_LENGTH)
         self.model = LLMRanker(checkpoint=self.CHECKPOINT, device=device, n_gpu=n_gpu)
+        self.prompt = RankPrompt(model=self.CHECKPOINT, tokenizer=self.model._tokenizer, max_length=self.MAX_LENGTH, rankllm=False)
     
     def score(self, query : str, doc_text : List[str], window_len : int, **kwargs):
         self.current_query.inferences += 1

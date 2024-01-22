@@ -6,10 +6,8 @@ import torch
 
 class RankZephyr(ListWiseTransformer):
 
-    PRE = "I will provide you with {num} passages, each indicated by a numerical identifier []. Rank the passages based on their relevance to the search query: {query}."
-    POST = "Search Query: {query}.\n\nRank the {num} passages above based on their relevance to the search query. All the passages should be included and listed using identifiers, in descending order of relevance. The output format should be [] > [], e.g., [4] > [2], Only respond with the ranking results, do not say any word or explain."
     CHECKPOINT = 'castorini/rank_zephyr_7b_v1_full'
-    MAX_LENGTH = 200
+    MAX_LENGTH = 300
 
     def __init__(self, 
                  device : Union[str, int] = 'cuda', 
@@ -17,8 +15,8 @@ class RankZephyr(ListWiseTransformer):
                  **kwargs) -> None:
         super().__init__(**kwargs)
 
-        self.prompt = RankPrompt(components=[self.PRE, '{documents}', self.POST], doc_formatter=True, model=self.CHECKPOINT, max_length=self.MAX_LENGTH, rankllm=True)
         self.model = LLMRanker(checkpoint=self.CHECKPOINT, device=device, n_gpu=n_gpu)
+        self.prompt = RankPrompt(model=self.CHECKPOINT, tokenizer=self.model._tokenizer, max_length=self.MAX_LENGTH, rankllm=False)
     
     def score(self, query : str, doc_text : List[str], window_len : int, **kwargs):
         self.current_query.inferences += 1
