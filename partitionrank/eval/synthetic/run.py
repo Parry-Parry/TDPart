@@ -64,9 +64,12 @@ def create_synthetic(out_path : str, datasets : List[str], order : int, window_l
         'qid': [],
         'iter': [],
         'ratio': [],
-        'nDCG@10' : [],
-        'nDCG@5' : [],
-        'nDCG@1' : [],
+        'before_nDCG@10' : [],
+        'before_nDCG@5' : [],
+        'before_nDCG@1' : [],
+        'after_nDCG@10' : [],
+        'after_nDCG@5' : [],
+        'after_nDCG@1' : []
     }
 
     for qid, query in all_queries.items():
