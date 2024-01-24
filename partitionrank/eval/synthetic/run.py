@@ -25,7 +25,7 @@ RATIOS = {
 
 def sample(qrels, qid, num_items : int = 20, order = Order.RANDOM, ratio : int = 1):
     ratio = int(ratio * num_items)
-    qrels = qrels[qrels['query_id'] == qid]
+    qrels = qrels[qrels['query_id'] == str(qid)]
     non_relevant = qrels[qrels['relevance'].isin([0, 1])].copy()
     relevant = qrels[qrels['relevance'].isin([2, 3])].copy()
     non_relevant = non_relevant.sample(frac=num_items-ratio, replace=False)
@@ -65,8 +65,7 @@ def create_synthetic(out_path : str, datasets : List[str], order : int, window_l
         'nDCG@1' : [],
     }
 
-    for qid in all_qrels.query_id.unique():
-        query = all_queries[qid]
+    for qid, query in all_queries.items():
         for i in range(n_samples):
             for ratio in RATIOS[window_len]:
                 sample = sample(all_qrels, qid, window_len, order, ratio)
