@@ -69,10 +69,10 @@ def create_synthetic(out_path : str, datasets : List[str], order : int, window_l
                 sample = sample(all_qrels, qid, window_len, order, ratio)
                 sample['text'] = sample['docno'].apply(lambda x: all_docs[str(x)])
                 sample['query'] = query
-                old_metrics = eval.calc_aggregate(sample)
+                old_metrics = eval.calc_aggregate(sample.rename(columns={'docno': 'doc_id', 'qid': 'query_id'}))
                 old_metrics = {str(k) : v for k, v in old_metrics.items()}
                 rez = model.transform(sample)
-                metrics = eval.calc_aggregate(rez)
+                metrics = eval.calc_aggregate(rez.rename(columns={'docno': 'doc_id', 'qid': 'query_id'}))
                 metrics = {str(k) : v for k, v in metrics.items()}
 
                 output['qid'].append(qid)
