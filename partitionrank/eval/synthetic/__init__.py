@@ -62,7 +62,7 @@ def create_synthetic(out_path : str, datasets : List[str], order : int, window_l
         'nDCG@1' : [],
     }
 
-    for qid, qrel in all_qrels.groupby('qid'):
+    for qid in all_qrels.query_id.unique():
         query = all_queries[qid]
         for i in range(n_samples):
             for ratio in RATIOS[window_len]:
