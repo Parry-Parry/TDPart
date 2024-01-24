@@ -28,15 +28,15 @@ def get_sample(qrels, qid, num_items : int = 20, order = Order.RANDOM, ratio : i
     qrels = qrels[qrels['query_id'] == str(qid)]
     non_relevant = qrels[qrels['relevance'].isin([0, 1])].copy()
     relevant = qrels[qrels['relevance'].isin([2, 3])].copy()
-    print(num_items - ratio)
     non_relevant = non_relevant.sample(n=num_items-ratio, replace=False)
     if len(relevant) < ratio: raise ValueError("Not enough relevant documents")
     relevant = relevant.sample(n=ratio, replace=False)
+    qrels = pd.concat([non_relevant, relevant]).reset_index(drop=True)
     if order == Order.ASC:
         qrels = qrels.sort_values(by=['relevance'])
     elif order == Order.DESC:
         qrels = qrels.sort_values(by=['relevance'], ascending=False)
-    qrels = qrels.rename(columns={'doc_id': 'docno', 'query_id': 'qid'})
+    qrels = qrels.rename(columns={'doc_id': 'docno', 'query_id': 'qid'}).reset_index(drop=True)
     qrels['score'] = [i for i in range(num_items)]
     return qrels
 
