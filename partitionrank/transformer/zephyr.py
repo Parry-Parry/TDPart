@@ -11,7 +11,7 @@ class RankZephyr(ListWiseTransformer):
 
     def __init__(self, 
                  device : Union[str, int] = 'cuda', 
-                 n_gpu : Optional[int] = None, 
+                 n_gpu : Optional[int] = 1, 
                  **kwargs) -> None:
         super().__init__(**kwargs)
 
