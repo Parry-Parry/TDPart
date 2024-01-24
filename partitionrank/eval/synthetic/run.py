@@ -2,6 +2,8 @@ from typing import List
 import ir_datasets as irds 
 import pandas as pd
 from enum import Enum
+import pyterrier as pt 
+if not pt.started(): pt.init()
 from .. import LOAD_FUNCS
 from ir_measures import *
 from ir_measures import evaluator
@@ -39,7 +41,7 @@ def sample(qrels, qid, num_items : int = 20, order = Order.RANDOM, ratio : int =
 
 def create_synthetic(out_path : str, datasets : List[str], order : int, window_len : int, n_samples : int = 10, model = None):
     marco = irds.load(MARCO)
-    model = LOAD_FUNCS[model](dataset=f'irds:{marco}', mode='single', window_size=window_len)
+    model = LOAD_FUNCS[model](dataset=pt.get_dataset(f'irds:{marco}'), mode='single', window_size=window_len)
     order = Order(order)
     datasets = {}
     for dataset in datasets:
