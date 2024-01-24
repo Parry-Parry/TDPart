@@ -55,7 +55,7 @@ def create_synthetic(out_path : str, datasets : List[str], order : int, window_l
     # filter queries by whether or not they have at least 19 relevant documents
 
     all_queries = {qid: query for qid, query in all_queries.items() if len(all_qrels[(all_qrels['query_id'] == qid) & (all_qrels['relevance'].isin([2, 3]))]) >= 19}
-
+    all_queries = {qid: query for qid, query in all_queries.items() if len(all_qrels[(all_qrels['query_id'] == qid) & (all_qrels['relevance'].isin([0,1]))]) >= 19}
     output = {
         'qid': [],
         'iter': [],
