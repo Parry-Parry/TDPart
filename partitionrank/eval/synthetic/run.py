@@ -29,9 +29,9 @@ def get_sample(qrels, qid, num_items : int = 20, order = Order.RANDOM, ratio : i
     non_relevant = qrels[qrels['relevance'].isin([0, 1])].copy()
     relevant = qrels[qrels['relevance'].isin([2, 3])].copy()
     print(num_items - ratio)
-    non_relevant = non_relevant.sample(frac=num_items-ratio, replace=False)
+    non_relevant = non_relevant.sample(n=num_items-ratio, replace=False)
     if len(relevant) < ratio: raise ValueError("Not enough relevant documents")
-    relevant = relevant.sample(frac=ratio, replace=False)
+    relevant = relevant.sample(n=ratio, replace=False)
     if order == Order.ASC:
         qrels = qrels.sort_values(by=['relevance'])
     elif order == Order.DESC:
