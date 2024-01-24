@@ -38,16 +38,16 @@ def sample(qrels, qid, num_items : int = 20, order = Order.RANDOM, ratio : int =
     return qrels
 
 def create_synthetic(out_path : str, datasets : List[str], order : int, window_len : int, n_samples : int = 10, model = None):
-
-    model = LOAD_FUNCS[model](mode='single', window_size=window_len)
-    eval = evaluator([nDCG@10, nDCG@5, nDCG@1], pd.DataFrame(irds.load(MARCO).qrels_iter()))
+    marco = irds.load(MARCO)
+    model = LOAD_FUNCS[model](dataset=marco, mode='single', window_size=window_len)
     order = Order(order)
     datasets = {}
     for dataset in datasets:
         datasets[dataset] = irds.load(dataset)
     all_qrels = pd.concat([pd.DataFrame(ds.qrels_iter()) for ds in datasets.values()])
+    eval = evaluator([nDCG@10, nDCG@5, nDCG@1], all_qrels)
     all_queries = pd.concat([pd.DataFrame(ds.queries_iter()) for ds in datasets.values()]).set_index('query_id').text.to_dict()
-    all_docs = pd.DataFrame(irds.load(MARCO).docs_iter()).set_index('doc_id').text.to_dict()
+    all_docs = pd.DataFrame(marco.docs_iter()).set_index('doc_id').text.to_dict()
 
     # filter queries by whether or not they have at least 19 relevant documents
 
