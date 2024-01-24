@@ -39,13 +39,12 @@ def sample(qrels, qid, num_items : int = 20, order = Order.RANDOM, ratio : int =
     qrels['score'] = [i for i in range(num_items)]
     return qrels
 
-def create_synthetic(out_path : str, datasets : List[str], order : int, window_len : int, n_samples : int = 10, model = None):
-    print(datasets)
+def create_synthetic(out_path : str, ir_datasets : List[str], order : int, window_len : int, n_samples : int = 10, model = None):
     marco = irds.load(MARCO)
     model = LOAD_FUNCS[model](dataset=pt.get_dataset('irds:msmarco-passage'), mode='single', window_size=window_len, cutoff=window_len-1)
     order = Order(order)
     datasets = {}
-    for dataset in datasets:
+    for dataset in ir_datasets:
         datasets[dataset] = irds.load(dataset)
     all_qrels = pd.concat([pd.DataFrame(ds.qrels_iter()) for ds in datasets.values()])
     eval = evaluator([nDCG@10, nDCG@5, nDCG@1], all_qrels)
