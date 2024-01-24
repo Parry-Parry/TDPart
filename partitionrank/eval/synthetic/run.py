@@ -8,7 +8,7 @@ from ir_measures import evaluator
 from os.path import join
 from fire import Fire
 
-MARCO = 'irds:msmarco-passage/train/triples-small'
+MARCO = 'msmarco-passage/train/triples-small'
 
 class Order(Enum):
     RANDOM = 0
