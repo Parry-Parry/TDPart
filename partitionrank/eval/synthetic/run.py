@@ -23,7 +23,7 @@ RATIOS = {
         20 : [x * 0.01 for x in range(5, 100, 5)],
     }
 
-def sample(qrels, qid, num_items : int = 20, order = Order.RANDOM, ratio : int = 1):
+def get_sample(qrels, qid, num_items : int = 20, order = Order.RANDOM, ratio : int = 1):
     ratio = int(ratio * num_items)
     qrels = qrels[qrels['query_id'] == str(qid)]
     non_relevant = qrels[qrels['relevance'].isin([0, 1])].copy()
@@ -68,7 +68,7 @@ def create_synthetic(out_path : str, datasets : List[str], order : int, window_l
     for qid, query in all_queries.items():
         for i in range(n_samples):
             for ratio in RATIOS[window_len]:
-                sample = sample(all_qrels, qid, window_len, order, ratio)
+                sample = get_sample(all_qrels, qid, window_len, order, ratio)
                 sample['text'] = sample['docno'].apply(lambda x: all_docs[str(x)])
                 sample['query'] = query
                 old_metrics = eval.calc_aggregate(sample.rename(columns={'docno': 'doc_id', 'qid': 'query_id'}))
