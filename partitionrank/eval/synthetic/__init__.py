@@ -66,9 +66,11 @@ def create_synthetic(out_path : str, datasets : List[str], order : int, window_l
         query = all_queries[qid]
         for i in range(n_samples):
             for ratio in RATIOS[window_len]:
-                sample = sample(qrel, qid, window_len, order, ratio)
+                sample = sample(all_qrels, qid, window_len, order, ratio)
                 sample['text'] = sample['docno'].apply(lambda x: all_docs[str(x)])
                 sample['query'] = query
+                old_metrics = eval.calc_aggregate(sample)
+                old_metrics = {str(k) : v for k, v in old_metrics.items()}
                 rez = model.transform(sample)
                 metrics = eval.calc_aggregate(rez)
                 metrics = {str(k) : v for k, v in metrics.items()}
@@ -76,9 +78,12 @@ def create_synthetic(out_path : str, datasets : List[str], order : int, window_l
                 output['qid'].append(qid)
                 output['iter'].append(i)
                 output['ratio'].append(ratio)
-                output['nDCG@10'].append(metrics['nDCG@10'])
-                output['nDCG@5'].append(metrics['nDCG@5'])
-                output['nDCG@1'].append(metrics['nDCG@1'])
+                output['before_nDCG@10'].append(old_metrics['nDCG@10'])
+                output['before_nDCG@5'].append(old_metrics['nDCG@5'])
+                output['before_nDCG@1'].append(old_metrics['nDCG@1'])
+                output['after_nDCG@10'].append(metrics['nDCG@10'])
+                output['after_nDCG@5'].append(metrics['nDCG@5'])
+                output['after_nDCG@1'].append(metrics['nDCG@1'])
     
     out_name = f"{model}.{order.name}.{window_len}.tsv.gz"
 
