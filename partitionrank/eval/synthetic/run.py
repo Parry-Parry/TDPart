@@ -40,7 +40,7 @@ def sample(qrels, qid, num_items : int = 20, order = Order.RANDOM, ratio : int =
     return qrels
 
 def create_synthetic(out_path : str, datasets : List[str], order : int, window_len : int, n_samples : int = 10, model = None):
-    ir_datasets = datasets
+    ir_datasets = ['msmarco-passage/trec-dl-2019/judged', 'msmarco-passage/trec-dl-2020/judged']
     marco = irds.load(MARCO)
     model = LOAD_FUNCS[model](dataset=pt.get_dataset('irds:msmarco-passage'), mode='single', window_size=window_len, cutoff=window_len-1)
     order = Order(order)
