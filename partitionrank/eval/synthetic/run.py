@@ -27,8 +27,8 @@ def get_sample(qrels, qid, num_items : int = 20, order = Order.RANDOM, ratio : i
     ratio = int(ratio * num_items)
     qrels = qrels[qrels['query_id'] == str(qid)]
     non_relevant = qrels[qrels['relevance'].isin([0, 1])].copy()
-    print(f"Number of non-relevant documents: {len(non_relevant)}")
     relevant = qrels[qrels['relevance'].isin([2, 3])].copy()
+    print(num_items - ratio)
     non_relevant = non_relevant.sample(frac=num_items-ratio, replace=False)
     if len(relevant) < ratio: raise ValueError("Not enough relevant documents")
     relevant = relevant.sample(frac=ratio, replace=False)
