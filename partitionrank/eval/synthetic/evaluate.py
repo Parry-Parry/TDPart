@@ -64,3 +64,5 @@ def evaluate(in_path : str, out_path : str, model : Any):
     out_name = f"{model}.{i}.tsv.gz"
     pd.DataFrame(output).to_csv(join(out_path, out_name), sep='\t', index=False)
 
+if __name__ == '__main__':
+    Fire(evaluate)
