@@ -43,7 +43,7 @@ def evaluate(in_path : str, out_path : str, model : Any):
                     out_frame = output.copy()
                     _ratio = str(ratio).replace('.', '_')
                     input_name = f"{_order.name}.{_ratio}.{window_len}.{i}.tsv.gz"
-                    sample = pd.read_csv(join(in_path, input_name), sep='\t')
+                    sample = pd.read_csv(join(in_path, input_name), sep='\t', dtype={'docno': str, 'qid': str})
                     print(sample.head())
                     old_metrics = eval.calc_aggregate(sample.rename(columns={'docno': 'doc_id', 'qid': 'query_id'}))
                     old_metrics = {str(k) : v for k, v in old_metrics.items()}
