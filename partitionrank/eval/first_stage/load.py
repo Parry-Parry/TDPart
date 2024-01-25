@@ -13,6 +13,16 @@ def load_bi_encoder(checkpoint : str ='sebastian-hofstaetter/distilbert-dot-tas_
     backbone = HgfBiEncoder(model, tokenizer, {}, device=model.device)
     return BiScorer(backbone, batch_size=batch_size)
 
+def load_dense_retrieval(index_path : str, checkpoint : str ='sebastian-hofstaetter/distilbert-dot-tas_b-b256-msmarco', batch_size : int = 64, **kwargs):
+    from transformers import AutoModel, AutoTokenizer
+    from pyterrier_dir import TorchIndex, HgfBiEncoder
+
+    model = AutoModel.from_pretrained(checkpoint).cuda().eval()
+    tokenizer = AutoTokenizer.from_pretrained(checkpoint)
+    backbone = HgfBiEncoder(model, tokenizer, {}, device=model.device)
+    index = TorchIndex(index_path)
+    return backbone >> index
+
 def load_electra(checkpoint : str ='crystina-z/monoELECTRA_LCE_nneg31', batch_size : int = 64, **kwargs):
     from pyterrier_dr import ElectraScorer
 
