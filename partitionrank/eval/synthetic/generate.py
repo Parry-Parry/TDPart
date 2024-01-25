@@ -1,20 +1,15 @@
-from typing import List
 import ir_datasets as irds 
 import pandas as pd
 import pyterrier as pt 
 if not pt.started(): pt.init()
-from .. import LOAD_FUNCS
 from ir_measures import *
-from ir_measures import evaluator
 from os.path import join
 from fire import Fire
 
 from . import MARCO, RATIOS, Order, IR_DATASETS, get_sample
 
-def create_synthetic(out_path : str, datasets : List[str], order : int, window_len : int, n_samples : int = 10, model = None):
-    
+def create_synthetic(out_path : str, n_samples : int = 10):
     marco = irds.load(MARCO)
-    order = Order(order)
     datasets = {}
     for dataset in IR_DATASETS:
         datasets[dataset] = irds.load(dataset)
