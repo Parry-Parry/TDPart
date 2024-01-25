@@ -16,8 +16,9 @@ class LiT5(ListWiseTransformer):
                  stride : int = 10, 
                  buffer : int = 20, 
                  mode='sliding', 
-                 max_iters : int = 100):
-        super().__init__(window_size=window_size, stride=stride, buffer=buffer, mode=mode, max_iters=max_iters)
+                 max_iters : int = 100,
+                 **kwargs):
+        super().__init__(window_size=window_size, stride=stride, buffer=buffer, mode=mode, max_iters=max_iters, verbose=verbose, **kwargs)
         self.tokenizer = T5Tokenizer.from_pretrained(model_path, return_dict=False, legacy=False, use_fast=True)
         self.model = FiD.from_pretrained(model_path, from_flax=False).cuda().eval()
         self.model.encoder.config.n_passages = window_size
