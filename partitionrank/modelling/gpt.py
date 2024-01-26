@@ -1,5 +1,4 @@
-import logging
-from typing import Dict, List, Any, Optional, Tuple, Union
+from typing import Dict, List, Any, Tuple, Union
 from transformers.generation import GenerationConfig
 from ftfy import fix_text
 import time
@@ -7,6 +6,7 @@ import tiktoken
 from .prompt import replace_number
 import openai
 import re
+import torch
 
 # Based on https://github.com/castorini/rank_llm/blob/main/src/rank_llm/
 
