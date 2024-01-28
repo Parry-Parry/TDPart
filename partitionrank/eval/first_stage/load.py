@@ -15,12 +15,12 @@ def load_bi_encoder(checkpoint : str ='sebastian-hofstaetter/distilbert-dot-tas_
 
 def load_dense_retrieval(index_path : str, checkpoint : str ='sebastian-hofstaetter/distilbert-dot-tas_b-b256-msmarco', batch_size : int = 64, **kwargs):
     from transformers import AutoModel, AutoTokenizer
-    from pyterrier_dir import TorchIndex, HgfBiEncoder
+    from pyterrier_dir import FlexIndex, HgfBiEncoder
 
     model = AutoModel.from_pretrained(checkpoint).cuda().eval()
     tokenizer = AutoTokenizer.from_pretrained(checkpoint)
     backbone = HgfBiEncoder(model, tokenizer, {}, device=model.device)
-    index = TorchIndex(index_path)
+    index = FlexIndex(index_path)
     return backbone >> index
 
 def load_electra(checkpoint : str ='crystina-z/monoELECTRA_LCE_nneg31', batch_size : int = 64, **kwargs):
@@ -50,5 +50,6 @@ LOAD_FUNCS = {
     'bi_encoder': load_bi_encoder,
     'electra': load_electra,
     'splade': load_splade,
-    'bm25': load_bm25
+    'bm25': load_bm25,
+    'dr': load_dense_retrieval,
 }
