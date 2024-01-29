@@ -8,6 +8,7 @@ from json import dump
 import ir_datasets as irds
 import pandas as pd
 import logging
+import os
 
 def score_zephyr(dataset : str, 
                  qrels : str, 
@@ -27,6 +28,9 @@ def score_zephyr(dataset : str,
     topics_or_res['query'] = topics_or_res['qid'].apply(lambda x: queries[str(x)])
     del queries
     out_file = join(output_path, f"vicuna.{mode}.{buffer}.{window_size}.{stride}.tsv.gz")
+    if os.path.exists(out_file): 
+        logging.info(f"Skipping vicuna.{mode}.{buffer}.{window_size}.{stride}, already exists")
+        return
     log_file = join(output_path, f"vicuna.{mode}.{buffer}.{window_size}.{stride}.log")
     logging.info("Loading vicuna model")
     model = RankVicuna(device='cuda', n_gpu=n_gpu, mode=mode, window_size=window_size, buffer=buffer, stride=stride, max_iters=max_iters)

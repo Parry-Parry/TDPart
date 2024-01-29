@@ -118,7 +118,7 @@ class GPTRanker:
         return_text=False,
         reduce_length=False,
         **kwargs,
-    ) -> Union[str, Dict[str, Any]]:
+    ) -> List[int]:
         while True:
             try:
                 completion = openai.ChatCompletion.create(
