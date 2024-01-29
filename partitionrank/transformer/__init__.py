@@ -118,7 +118,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
         #breakpoint()
         sub_window_size = self.window_size - 1 # account for addition of p
 
-        while len(c_text) <= self.buffer and len(r_text) >= sub_window_size:
+        while len(c_text) <= self.buffer and len(r_text) > 0:
             l_text, r_text = _split(r_text, sub_window_size)
             l_idx, r_idx = _split(r_idx, sub_window_size)
 
@@ -132,12 +132,12 @@ class ListWiseTransformer(pt.Transformer, ABC):
                 'doc_text': l_text,
                 'doc_idx': l_idx,
                 'start_idx': 0,
-                'end_idx': self.window_size,
-                'window_len': self.window_size
+                'end_idx': len(l_text),
+                'window_len': len(l_text)
             }
 
             order = np.array(self.score(**kwargs))
-            orig_idxs = np.arange(self.window_size)
+            orig_idxs = np.arange(len(l_text))
             l_idx[orig_idxs], l_text[orig_idxs],  = l_idx[order], l_text[order]
             #breakpoint()
             p_idx = np.where(l_idx == p_id)[0][0] # find index of pivot id
