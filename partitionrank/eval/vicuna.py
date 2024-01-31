@@ -32,6 +32,13 @@ def score_zephyr(dataset : str,
         logging.info(f"Skipping vicuna.{mode}.{buffer}.{window_size}.{stride}, already exists")
         return
     log_file = join(output_path, f"vicuna.{mode}.{buffer}.{window_size}.{stride}.log")
+    logging.info("Running with the following parameters:")
+    logging.info(f"Dataset: {dataset}")
+    logging.info(f"Qrels: {qrels}")
+    logging.info(f"Topics: {topics_or_res}")
+    logging.info(f"Output: {out_file}")
+    logging.info(f"Mode: {mode}")
+    logging.info(f"Buffer: {buffer}")
     logging.info("Loading vicuna model")
     model = RankVicuna(device='cuda', n_gpu=n_gpu, mode=mode, window_size=window_size, buffer=buffer, stride=stride, max_iters=max_iters)
     pipe = pt.text.get_text(dataset, "text") >> model

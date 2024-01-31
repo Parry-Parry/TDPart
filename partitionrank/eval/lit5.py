@@ -22,6 +22,13 @@ def score_lit_t5(dataset : str, qrels : str, topics_or_res : str, output_path : 
         logging.info(f"Skipping lit5.{mode}.{buffer}.{window_size}.{stride}, already exists")
         return
     log_file = join(output_path, f"lit5.{mode}.{buffer}.{window_size}.{stride}.log")
+    logging.info("Running with the following parameters:")
+    logging.info(f"Dataset: {dataset}")
+    logging.info(f"Qrels: {qrels}")
+    logging.info(f"Topics: {topics_or_res}")
+    logging.info(f"Output: {out_file}")
+    logging.info(f"Mode: {mode}")
+    logging.info(f"Buffer: {buffer}")
     logging.info("Loading LiT5 model")
     model = LiT5(model_path=checkpoint, mode=mode, window_size=window_size, buffer=buffer, stride=stride, max_iters=max_iters)
     pipe = pt.text.get_text(dataset, "text") >> model
