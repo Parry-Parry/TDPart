@@ -55,6 +55,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
                  cutoff : int = 10, 
                  mode='sliding', 
                  max_iters : int = 100,
+                 depth : int = 100,
                  verbose : bool = False,
                  **kwargs) -> None:
         super().__init__()
@@ -64,6 +65,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
         self.buffer = buffer
         self.cutoff = cutoff - 1
         self.max_iters = max_iters
+        self.depth = depth
         self.verbose = verbose
 
         assert cutoff < window_size, "cutoff must be less than window_size"
@@ -239,7 +241,8 @@ class ListWiseTransformer(pt.Transformer, ABC):
         progress = not self.verbose
         with torch.no_grad():
             for (qid, query), query_results in tqdm(inp.groupby(['qid', 'query']), unit='q', disable=progress):
-                doc_idx, doc_texts = self.process(query, query_results)
+                query_results.sort_values('score', ascending=False, inplace=True)
+                doc_idx, doc_texts = self.process(query, query_results.iloc[:self.depth])
                 res['qid'].extend([qid] * len(doc_idx))
                 res['query'].extend([query] * len(doc_idx))
                 res['docno'].extend(doc_idx)

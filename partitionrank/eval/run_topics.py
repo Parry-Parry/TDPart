@@ -22,19 +22,20 @@ def score_model(dataset : str,
                  max_iters : int = 100,
                  checkpoint : str = None,
                  n_gpu : int = 1,
+                 depth : int = 100,
                  **kwargs):
     topics_or_res = read_results(topics_or_res)
     ds = irds.load(qrels)
     queries = pd.DataFrame(ds.queries_iter()).set_index('query_id').text.to_dict()
     topics_or_res['query'] = topics_or_res['qid'].apply(lambda x: queries[str(x)])
     del queries
-    out_file = join(output_path, f"{model_type}.{mode}.{buffer}.{window_size}.{stride}.tsv.gz")
+    out_file = join(output_path, f"{model_type}.{mode}.{buffer}.{window_size}.{stride}.{depth}.tsv.gz")
     if os.path.exists(out_file): 
-        logging.info(f"Skipping {model_type}.{mode}.{buffer}.{window_size}.{stride}, already exists")
+        logging.info(f"Skipping {model_type}.{mode}.{buffer}.{window_size}.{stride}.{depth}, already exists")
         return 
-    log_file = join(output_path, f"{model_type}.{mode}.{buffer}.{window_size}.{stride}.log")
+    log_file = join(output_path, f"{model_type}.{mode}.{buffer}.{window_size}.{stride}.{depth}.log")
     logging.info(f"Loading {model_type} model")
-    pipe = LOAD_FUNCS[model_type](dataset, qrels=pd.DataFrame(ds.qrels_iter()), model_path=checkpoint, n_gpu=n_gpu, mode=mode, window_size=window_size, buffer=buffer, stride=stride, max_iters=max_iters)
+    pipe = LOAD_FUNCS[model_type](dataset, qrels=pd.DataFrame(ds.qrels_iter()), model_path=checkpoint, n_gpu=n_gpu, mode=mode, window_size=window_size, buffer=buffer, stride=stride, max_iters=max_iters, depth=depth, **kwargs)
 
     res = pipe.transform(topics_or_res)
 
