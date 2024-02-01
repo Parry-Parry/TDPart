@@ -1,26 +1,21 @@
 from typing import Optional, Union, List
 from partitionrank.transformer import ListWiseTransformer
-from partitionrank.modelling.prompt import RankPrompt
-from partitionrank.modelling.base import LLMRanker
+from partitionrank.modelling.gpt import GPTRanker
 import torch
+import os
 
 class RankGPT(ListWiseTransformer):
-
+    CHECKPOINT = "gpt-4-0314"
     PRE = "I will provide you with {num} passages, each indicated by a numerical identifier []. Rank the passages based on their relevance to the search query: {query}."
     POST = "Search Query: {query}.\nRank the {num} passages above based on their relevance to the search query. All the passages should be included and listed using identifiers, in descending order of relevance. The output format should be [] > [], e.g., [4] > [2], Only respond with the ranking results, do not say any word or explain."
     MAX_LENGTH = 200
 
-    def __init__(self, 
-                 device : Union[str, int] = 'cuda', 
-                 n_gpu : Optional[int] = 1, 
-                 **kwargs) -> None:
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
-        self.prompt = RankPrompt([self.PRE, '{documents}', self.POST], doc_formatter=True, model=self.CHECKPOINT, max_length=self.MAX_LENGTH)
-        self.model = LLMRanker(checkpoint=self.CHECKPOINT, device=device, n_gpu=n_gpu, fast_chat=True)
-        self.chain = self.prompt >> self.model
+        self.model = GPTRanker(model=self.CHECKPOINT, context_size=4096, key=os.get_env('OPENAI_API_KEY'))
     
     def score(self, query : str, doc_text : List[str], window_len : int, **kwargs):
         self.current_query.inferences += 1
-        order = self.chain(query=query, texts=doc_text.tolist(), num=window_len)
+        order = self.model(query=query, texts=doc_text.tolist(), num=window_len)
         return order
