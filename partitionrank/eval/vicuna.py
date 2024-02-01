@@ -20,6 +20,7 @@ def score_zephyr(dataset : str,
                  buffer : int = 20, 
                  max_iters : int = 100,
                  n_gpu : int = 1,
+                 depth : int = 100,
                  **kwargs):
     topics_or_res = read_results(topics_or_res)
     dataset = pt.get_dataset(dataset)
@@ -27,11 +28,11 @@ def score_zephyr(dataset : str,
     queries = pd.DataFrame(ds.queries_iter()).set_index('query_id').text.to_dict()
     topics_or_res['query'] = topics_or_res['qid'].apply(lambda x: queries[str(x)])
     del queries
-    out_file = join(output_path, f"vicuna.{mode}.{buffer}.{window_size}.{stride}.tsv.gz")
+    out_file = join(output_path, f"vicuna.{mode}.{buffer}.{window_size}.{stride}.{depth}.tsv.gz")
     if os.path.exists(out_file): 
         logging.info(f"Skipping vicuna.{mode}.{buffer}.{window_size}.{stride}, already exists")
         return
-    log_file = join(output_path, f"vicuna.{mode}.{buffer}.{window_size}.{stride}.log")
+    log_file = join(output_path, f"vicuna.{mode}.{buffer}.{window_size}.{stride}.{depth}.log")
     logging.info("Running with the following parameters:")
     logging.info(f"Dataset: {dataset}")
     logging.info(f"Qrels: {qrels}")
@@ -40,7 +41,7 @@ def score_zephyr(dataset : str,
     logging.info(f"Mode: {mode}")
     logging.info(f"Buffer: {buffer}")
     logging.info("Loading vicuna model")
-    model = RankVicuna(device='cuda', n_gpu=n_gpu, mode=mode, window_size=window_size, buffer=buffer, stride=stride, max_iters=max_iters)
+    model = RankVicuna(device='cuda', n_gpu=n_gpu, mode=mode, window_size=window_size, buffer=buffer, stride=stride, max_iters=max_iters, depth=depth)
     pipe = pt.text.get_text(dataset, "text") >> model
 
     res = pipe.transform(topics_or_res)
