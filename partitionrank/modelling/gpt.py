@@ -1,4 +1,4 @@
-from typing import Dict, List, Any, Tuple, Union
+from typing import Dict, List, Any, Optional, Tuple, Union
 from transformers.generation import GenerationConfig
 from ftfy import fix_text
 import time
@@ -28,9 +28,27 @@ class GPTRanker:
         order = output + [i for i in range(length) if i not in output] # backfill missing passages
         return order
     
+    def run_llm(self,
+        prompt: Union[str, List[Dict[str, str]]],
+        current_window_size: Optional[int] = None,
+    ) -> Tuple[str, int]:
+        model_key = "model"
+        response = self._call_completion(
+            messages=prompt,
+            temperature=0,
+            completion_mode=1,
+            return_text=True,
+            **{model_key: self._model},
+        )
+        try:
+            encoding = tiktoken.get_encoding(self._model)
+        except:
+            encoding = tiktoken.get_encoding("cl100k_base")
+        return response, len(encoding.encode(response))
+    
     def get_num_tokens(self, prompt: Union[str, List[Dict[str, str]]]) -> int:
         """Returns the number of tokens used by a list of messages in prompt."""
-        if self.model in ["gpt-3.5-turbo-0301", "gpt-3.5-turbo"]:
+        if self.model in ["gpt-3.5-turbo-1205", "gpt-3.5-turbo"]:
             tokens_per_message = (
                 4  # every message follows <|start|>{role/name}\n{content}<|end|>\n
             )
@@ -140,19 +158,8 @@ class GPTRanker:
             )
         return completion
     
-    def __call__(self, text : str, window_len : int):
-        if isinstance(text, str): text = [text]
-        inputs = self._tokenizer(text)
-        inputs = {k: torch.tensor(v).to(self.device) for k, v in inputs.items()}
-
-        gen_cfg = GenerationConfig.from_model_config(self._model.config)
-        gen_cfg.max_new_tokens = self.num_output_tokens(window_len)
-        gen_cfg.min_new_tokens = self.num_output_tokens(window_len)
-        # gen_cfg.temperature = 0
-        gen_cfg.do_sample = False
-
-        output_ids = self._model.generate(**inputs, generation_config=gen_cfg)
-        if self._model.config.is_encoder_decoder: output_ids = output_ids[0]
-        else: output_ids = output_ids[0][len(inputs["input_ids"][0]):]
-        outputs = self._tokenizer.decode(output_ids, skip_special_tokens=True, spaces_between_special_tokens=False)
-        return self.parse_output(outputs, window_len)
+    def __call__(self, query : str, texts : List[str], num : int):
+        prompt, num_tokens = self.create_rank_gpt_prompt(query, texts, num)
+        response, num_tokens = self.run_llm(prompt, num)
+        return self.parse_output(response, num)
+        
