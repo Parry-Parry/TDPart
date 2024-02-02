@@ -120,12 +120,12 @@ class GPTRanker:
                 }
             )
             num_tokens = self.get_num_tokens(messages)
-            if num_tokens <= self.max_tokens() - self.num_output_tokens(num):
+            if num_tokens <= 4096 - self.num_output_tokens(num):
                 break
             else:
                 max_length -= max(
                     1,
-                    (num_tokens - self.max_tokens() + self.num_output_tokens(num))
+                    (num_tokens - 4096 + self.num_output_tokens(num))
                     // ((num) * 4),
                 )
         return messages, self.get_num_tokens(messages)
