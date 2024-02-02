@@ -30,7 +30,7 @@ def score_gpt(dataset : str,
     del queries
     out_file = join(output_path, f"gpt.{mode}.{buffer}.{window_size}.{stride}.{depth}.tsv.gz")
     if os.path.exists(out_file): 
-        logging.info(f"Skipping gpt.{mode}.{buffer}.{window_size}.{stride}, already exists")
+        logging.info(f"Skipping gpt.{mode}.{buffer}.{window_size}.{stride}.{depth}, already exists")
         return
     log_file = join(output_path, f"gpt.{mode}.{buffer}.{window_size}.{stride}.{depth}.log")
     logging.info("Running with the following parameters:")
