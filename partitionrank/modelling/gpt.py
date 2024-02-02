@@ -37,7 +37,6 @@ class GPTRanker:
         response = self._call_completion(
             messages=prompt,
             temperature=0,
-            completion_mode=1,
             return_text=True,
             **{model_key: self.model},
         )
