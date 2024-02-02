@@ -120,7 +120,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
         #breakpoint()
         sub_window_size = self.window_size - 1 # account for addition of p
 
-        while len(c_text) <= self.buffer and len(r_text) > 0:
+        while len(c_text) < self.buffer and len(r_text) > 0:
             l_text, r_text = _split(r_text, sub_window_size)
             l_idx, r_idx = _split(r_idx, sub_window_size)
 
@@ -152,7 +152,12 @@ class ListWiseTransformer(pt.Transformer, ABC):
         # we have found no candidates better than p
         if len(c_text) == self.cutoff - 1: return concat([c_idx, [p_id]]), concat([c_text, [p_text]]), concat([b_idx, r_idx]), concat([b_text, r_text]), True 
         # we have found candidates better than p
-        return c_idx, c_text, concat([[p_id], b_idx, r_idx]), concat([[p_text], b_text, r_text]), False
+
+        # split c_idx and c_text by budget b
+        c_idx, ac_idx = _split(c_idx, self.buffer)
+        c_text, ac_text = _split(c_text, self.buffer)
+
+        return c_idx, c_text, concat(ac_idx, [[p_id], b_idx, r_idx]), concat(ac_text, [[p_text], b_text, r_text]), False
     
     def pivot(self, query : str, query_results : pd.DataFrame):
         qid = query_results['qid'].iloc[0]
