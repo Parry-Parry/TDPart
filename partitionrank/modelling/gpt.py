@@ -18,6 +18,7 @@ class GPTRanker:
 
         self.model = model
         self.context_size = context_size
+        self._output_token_estimate = None
 
         openai.api_key = key
 
