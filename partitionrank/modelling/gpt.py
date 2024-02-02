@@ -95,9 +95,36 @@ class GPTRanker:
     def _get_suffix_for_rank_gpt_prompt(self, query: str, num: int) -> str:
         return f"Search Query: {query}. \nRank the {num} passages above based on their relevance to the search query. The passages should be listed in descending order using identifiers. The most relevant passages should be listed first. The output format should be [] > [], e.g., [1] > [2]. Only response the ranking results, do not say any word or explain."
 
+    def num_output_tokens(self, current_window_size: Optional[int] = None) -> int:
+        if current_window_size is None:
+            current_window_size = self._window_size
+        if self._output_token_estimate and self._window_size == current_window_size:
+            return self._output_token_estimate
+        else:
+            try:
+                encoder = tiktoken.get_encoding(self._model)
+            except:
+                encoder = tiktoken.get_encoding("cl100k_base")
+
+            _output_token_estimate = (
+                len(
+                    encoder.encode(
+                        " > ".join([f"[{i+1}]" for i in range(current_window_size)])
+                    )
+                )
+                - 1
+            )
+            if (
+                self._output_token_estimate is None
+                and self._window_size == current_window_size
+            ):
+                self._output_token_estimate = _output_token_estimate
+            return _output_token_estimate
+
     def create_rank_gpt_prompt(
         self, query, texts, num
     ) -> Tuple[List[Dict[str, str]], int]:
+        self._window_size = num
         max_length = 300
         while True:
             messages = self._get_prefix_for_rank_gpt_prompt(query, num)
