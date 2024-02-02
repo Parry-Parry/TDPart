@@ -13,7 +13,7 @@ class RankGPT(ListWiseTransformer):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
-        self.model = GPTRanker(model=self.CHECKPOINT, context_size=4096, key=os.get_env('OPENAI_API_KEY'))
+        self.model = GPTRanker(model=self.CHECKPOINT, context_size=4096, key=os.getenv('OPENAI_API_KEY'))
     
     def score(self, query : str, doc_text : List[str], window_len : int, **kwargs):
         self.current_query.inferences += 1
