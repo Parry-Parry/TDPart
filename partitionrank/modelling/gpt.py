@@ -39,10 +39,10 @@ class GPTRanker:
             temperature=0,
             completion_mode=1,
             return_text=True,
-            **{model_key: self._model},
+            **{model_key: self.model},
         )
         try:
-            encoding = tiktoken.get_encoding(self._model)
+            encoding = tiktoken.get_encoding(self.model)
         except:
             encoding = tiktoken.get_encoding("cl100k_base")
         return response, len(encoding.encode(response))
@@ -103,7 +103,7 @@ class GPTRanker:
             return self._output_token_estimate
         else:
             try:
-                encoder = tiktoken.get_encoding(self._model)
+                encoder = tiktoken.get_encoding(self.model)
             except:
                 encoder = tiktoken.get_encoding("cl100k_base")
 
