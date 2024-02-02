@@ -157,7 +157,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
         c_idx, ac_idx = _split(c_idx, self.buffer)
         c_text, ac_text = _split(c_text, self.buffer)
 
-        return c_idx, c_text, concat(ac_idx, [[p_id], b_idx, r_idx]), concat(ac_text, [[p_text], b_text, r_text]), False
+        return c_idx, c_text, concat([ac_idx, [p_id], b_idx, r_idx]), concat([ac_text, [p_text], b_text, r_text]), False
     
     def pivot(self, query : str, query_results : pd.DataFrame):
         qid = query_results['qid'].iloc[0]
