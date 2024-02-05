@@ -1,4 +1,4 @@
-# PartitionRank
+# Top Down Partitioning SIGIR 2024
 
 ## Structure
 
