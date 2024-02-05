@@ -7,7 +7,7 @@ with open("README.md", "r") as fh:
 setuptools.setup(
     name="partitionrank",
     version="0.0.1",
-    author="A P",
+    author="Anonymous",
     description="PartitionRank",
     long_description=long_description,
     long_description_content_type="text/markdown",
