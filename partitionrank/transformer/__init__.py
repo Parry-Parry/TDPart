@@ -53,6 +53,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
                  stride : int = 10, 
                  buffer : int = 20, 
                  cutoff : int = 10, 
+                 n_child : int = 3,
                  mode='sliding', 
                  max_iters : int = 100,
                  depth : int = 100,
@@ -64,6 +65,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
         self.stride = stride
         self.buffer = buffer
         self.cutoff = cutoff - 1
+        self.num_child = n_child
         self.max_iters = max_iters
         self.depth = depth
         self.verbose = verbose
@@ -78,6 +80,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
             'pivot': self.pivot,
             'single': self.single_window
         }[mode]
+
     
     @abstractmethod
     def score(self, *args, **kwargs):
@@ -141,7 +144,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
             order = np.array(self.score(**kwargs))
             orig_idxs = np.arange(len(l_text))
             l_idx[orig_idxs], l_text[orig_idxs],  = l_idx[order], l_text[order]
-            #breakpoint()
+
             p_idx = np.where(l_idx == p_id)[0][0] # find index of pivot id
             # add left of pivot to candidates and right of pivot to backfill
             c_text = concat([c_text, l_text[:p_idx]])
@@ -234,7 +237,49 @@ class ListWiseTransformer(pt.Transformer, ABC):
         self.log.queries.append(self.current_query)
 
         return concat([doc_idx, rest_idx]), concat([doc_texts, rest_texts])
+    
+    # from https://github.com/ielab/llm-rankers/blob/main/llmrankers/setwise.py
+    '''
+    def _heapify(self, arr, n, i, query):
+        # Find largest among root and children
+        if self.num_child * i + 1 < n:  # if there are children
+            docs = [arr[i]] + arr[self.num_child * i + 1: min((self.num_child * (i + 1) + 1), n)]
+            inds = [i] + list(range(self.num_child * i + 1, min((self.num_child * (i + 1) + 1), n)))
 
+            kwargs = {
+                'qid': query['qid'].iloc[0],
+                'query': query['query'].iloc[0],
+                'doc_text': query['text'].iloc[inds],
+                'doc_idx': query['docno'].iloc[inds],
+                'start_idx': 0,
+                'end_idx': len(inds),
+                'window_len': len(inds)
+            }
+            order = np.array(self.score(**kwargs))[0]
+            if largest != i:
+                arr[i], arr[largest] = arr[largest], arr[i]
+                self._heapify(arr, n, largest, query)
+
+    def _setwise(self, query : str, query_results : pd.DataFrame):
+        qid = query_results['qid'].iloc[0]
+        self.current_query = QueryLog(qid=qid)
+        query_results = query_results.sort_values('score', ascending=False)
+        doc_idx = query_results['docno'].to_numpy()
+        doc_texts = query_results['text'].to_numpy()
+        n = len(query_results)
+        ranked = 0
+        # Build max heap
+        for i in range(n // self.num_child, -1, -1):
+            self.heapify(arr, n, i, query)
+        for i in range(n - 1, 0, -1):
+            # Swap
+            arr[i], arr[0] = arr[0], arr[i]
+            ranked += 1
+            if ranked == k:
+                break
+            # Heapify root element
+            self._heapify(arr, i, 0, query)        
+    '''
     def transform(self, inp : pd.DataFrame):
         res = {
             'qid': [],
