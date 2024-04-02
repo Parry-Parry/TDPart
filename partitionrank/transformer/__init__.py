@@ -165,8 +165,8 @@ class ListWiseTransformer(pt.Transformer, ABC):
             kwargs = {
                 'qid': qid,
                 'query': query,
-                'doc_text': l.doc_texts,
-                'doc_idx': l.doc_idx,
+                'doc_text': l.doc_texts.tolist(),
+                'doc_idx': l.doc_idx.tolist(),
                 'start_idx': 0,
                 'end_idx': len(l),
                 'window_len': len(l)
@@ -178,7 +178,6 @@ class ListWiseTransformer(pt.Transformer, ABC):
 
             p_idx = np.where(l.doc_idx == p.doc_idx[0])[0][0] # find index of pivot id
             # add left of pivot to candidates and right of pivot to backfill
-
             c = c + l[:p_idx]
             b = b + l[p_idx+1:]
         
@@ -229,8 +228,8 @@ class ListWiseTransformer(pt.Transformer, ABC):
             kwargs = {
             'qid': qid,
             'query': query,
-            'doc_text': ranking[start_idx:end_idx].doc_texts,
-            'doc_idx': ranking[start_idx:end_idx].doc_idx,
+            'doc_text': ranking[start_idx:end_idx].doc_texts.tolist(),
+            'doc_idx': ranking[start_idx:end_idx].doc_idx.tolist(),
             'start_idx': start_idx,
             'end_idx': end_idx,
             'window_len': window_len
@@ -254,13 +253,13 @@ class ListWiseTransformer(pt.Transformer, ABC):
         rest_texts = rest['text'].to_numpy()
         
         kwargs = {
-        'qid': qid,
-        'query': query,
-        'doc_text': doc_texts,
-        'doc_idx': doc_idx,
-        'start_idx': 0,
-        'end_idx': len(doc_texts),
-        'window_len': len(doc_texts)
+            'qid': qid,
+            'query': query,
+            'doc_text': doc_texts.tolist(),
+            'doc_idx': doc_idx.tolist(),
+            'start_idx': 0,
+            'end_idx': len(doc_texts),
+            'window_len': len(doc_texts)
         }
         order = np.array(self.score(**kwargs))
         orig_idxs = np.arange(0, len(doc_texts))
