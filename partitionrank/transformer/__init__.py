@@ -239,7 +239,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
         return concat([doc_idx, rest_idx]), concat([doc_texts, rest_texts])
     
     # from https://github.com/ielab/llm-rankers/blob/main/llmrankers/setwise.py
-    '''
+
     def _heapify(self, arr, n, i, query):
         # Find largest among root and children
         if self.num_child * i + 1 < n:  # if there are children
@@ -279,7 +279,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
                 break
             # Heapify root element
             self._heapify(arr, i, 0, query)        
-    '''
+
     def transform(self, inp : pd.DataFrame):
         res = {
             'qid': [],
