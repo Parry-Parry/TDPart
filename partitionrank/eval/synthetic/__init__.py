@@ -10,12 +10,6 @@ class Order(Enum):
     ASC = 1
     DESC = 2
 
-RATIOS = {
-        5 : [x * 0.1 for x in range(2, 10, 2)],
-        10 : [x * 0.1 for x in range(1, 10, 1)],
-        20 : [x * 0.01 for x in range(5, 100, 5)],
-    }
-
 def get_sample(qrels, qid, num_items : int = 20, order = Order.RANDOM, ratio : int = 1):
     ratio = int(ratio * num_items)
     qrels = qrels[qrels['query_id'] == str(qid)]

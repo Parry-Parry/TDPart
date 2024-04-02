@@ -6,7 +6,7 @@ from ir_measures import *
 from os.path import join
 from fire import Fire
 
-from .. import RATIOS, Order, get_sample
+from .. import Order, get_sample
 
 def create_synthetic(dataset : str, out_path : str, n_samples : int = 10):
     corpus = irds.load(dataset)
@@ -25,7 +25,7 @@ def create_synthetic(dataset : str, out_path : str, n_samples : int = 10):
         for order in range(3):
             _order = Order(order)
             for window_len in [5, 10, 20]:
-                for ratio in RATIOS[window_len]:
+                for ratio in [0.2, 0.4, 0.6, 0.8]:
                     _ratio = str(ratio).replace('.', '_')
                     output_name = f"{_order.name}.{_ratio}.{window_len}.{i}.tsv.gz"
                     frame = []
