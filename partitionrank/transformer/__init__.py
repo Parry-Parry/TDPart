@@ -56,17 +56,33 @@ class RankedList(object):
 
     def __getitem__(self, key):
         if isinstance(key, slice):
-            start, stop, step = key.indices(len(self))
-            return RankedList(self.doc_ids[start:stop], self.doc_texts[start:stop])
+            return RankedList(self.doc_idx[key], self.doc_texts[key])
         elif isinstance(key, int):
-            return RankedList(np.array([self.doc_ids[key]]), np.array([self.doc_texts[key]]))
+            return self.doc_idx[key], self.doc_texts[key]
+        elif isinstance(key, (list, np.ndarray)):
+            return RankedList([self.doc_idx[i] for i in key], [self.doc_texts[i] for i in key])
         else:
-            raise TypeError("Invalid key type. Please use int or slice.")
-    
+            raise TypeError("Invalid key type. Please use int, slice, list, or numpy array.")
+
+    def __setitem__(self, key, value):
+        if isinstance(key, int):
+            self.doc_idx[key], self.doc_texts[key] = value
+        elif isinstance(key, (list, np.ndarray)):
+            if isinstance(value, RankedList):
+                if len(key) != len(value):
+                    raise ValueError("Assigning RankedList requires the same length as the key.")
+                for i, idx in enumerate(key):
+                    self.doc_idx[idx], self.doc_texts[idx] = value.doc_idx[i], value.doc_texts[i]
+            else:
+                for i, idx in enumerate(key):
+                    self.doc_idx[idx], self.doc_texts[idx] = value[i]
+        else:
+            raise TypeError("Invalid key type. Please use int, list, or numpy array.")
+
     def __add__(self, other):
         if not isinstance(other, RankedList):
             raise TypeError("Unsupported operand type(s) for +: 'RankedList' and '{}'".format(type(other)))
-        return RankedList(concat(self.doc_texts, other.doc_texts), concat(self.doc_idx, other.doc_idx))
+        return RankedList(self.doc_idx + other.doc_idx, self.doc_texts + other.doc_texts)
 
 class ListWiseTransformer(pt.Transformer, ABC):
 
@@ -158,7 +174,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
 
             order = np.array(self.score(**kwargs))
             orig_idxs = np.arange(len(l))
-            l.doc_idx[orig_idxs], l.doc_texts[orig_idxs],  = l.doc_idx[order], l.doc_texts[order]
+            l[orig_idxs] = l[order]
 
             p_idx = np.where(l.doc_idx == p.doc_idx[0])[0][0] # find index of pivot id
             # add left of pivot to candidates and right of pivot to backfill
@@ -222,8 +238,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
             order = np.array(self.score(**kwargs))
             new_idxs = start_idx + order
             orig_idxs = np.arange(start_idx, end_idx)
-            ranking.doc_idx[orig_idxs] = ranking.doc_idx[new_idxs]
-            ranking.doc_texts[orig_idxs] = ranking.doc_texts[new_idxs]
+            ranking[orig_idxs] = ranking[new_idxs]
         self.log.queries.append(self.current_query)
         return ranking.doc_idx, ranking.doc_texts
     
@@ -276,15 +291,12 @@ class ListWiseTransformer(pt.Transformer, ABC):
             'end_idx': 1,
             'window_len': 2
         })
-        if l < n and li_comp == 0:
-            largest = l
-        if r < n and rl_comp == 0:
-            largest = r
+        if l < n and li_comp == 0: largest = l
+        if r < n and rl_comp == 0: largest = r
 
         # If root is not largest, swap with largest and continue heapifying
         if largest != i:
-            ranking.doc_texts[i], ranking.doc_texts[largest] = ranking.doc_texts[largest], ranking.doc_texts[i]
-            ranking.doc_idx[i], ranking.doc_idx[largest] = ranking.doc_idx[largest], ranking.doc_idx[i]
+            ranking[i], ranking[largest] = ranking[largest], ranking[i]
             self._heapify(query, ranking, n, largest)
 
     def _setwise(self, query : str, query_results : pd.DataFrame):
@@ -301,8 +313,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
             self._heapify(query, ranking, n, i)
         for i in range(n - 1, 0, -1):
             # Swap
-            ranking.doc_idx[i], ranking.doc_idx[0] = ranking.doc_idx[0], ranking.doc_idx[i]
-            ranking.doc_texts[i], ranking.doc_texts[0] = ranking.doc_texts[0], ranking.doc_texts[i]
+            ranking[i], ranking[0] = ranking[0], ranking[i]
             ranked += 1
             if ranked == self.k:
                 break
