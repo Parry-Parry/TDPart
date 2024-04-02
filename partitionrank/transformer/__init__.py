@@ -289,15 +289,15 @@ class ListWiseTransformer(pt.Transformer, ABC):
             'rank': [],
         }
         progress = not self.verbose
-        with torch.no_grad():
-            for (qid, query), query_results in tqdm(inp.groupby(['qid', 'query']), unit='q', disable=progress):
-                query_results.sort_values('score', ascending=False, inplace=True)
+        for (qid, query), query_results in tqdm(inp.groupby(['qid', 'query']), unit='q', disable=progress):
+            query_results.sort_values('score', ascending=False, inplace=True)
+            with torch.no_grad():
                 doc_idx, doc_texts = self.process(query, query_results.iloc[:self.depth])
-                res['qid'].extend([qid] * len(doc_idx))
-                res['query'].extend([query] * len(doc_idx))
-                res['docno'].extend(doc_idx)
-                res['text'].extend(doc_texts)
-                res['rank'].extend(list(range(len(doc_idx))))
+            res['qid'].extend([qid] * len(doc_idx))
+            res['query'].extend([query] * len(doc_idx))
+            res['docno'].extend(doc_idx)
+            res['text'].extend(doc_texts)
+            res['rank'].extend(list(range(len(doc_idx))))
         res = pd.DataFrame(res)
         res['score'] = -res['rank'].astype(float)
         return res

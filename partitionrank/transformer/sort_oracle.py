@@ -1,7 +1,4 @@
-from collections import defaultdict
-import pandas as pd
 import pyterrier as pt 
-import numpy as np
 if not pt.started(): pt.init()
 from . import ListWiseTransformer
 

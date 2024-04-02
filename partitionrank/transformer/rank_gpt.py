@@ -1,4 +1,4 @@
-from typing import Optional, Union, List
+from typing import List
 from partitionrank.transformer import ListWiseTransformer
 from partitionrank.modelling.gpt import GPTRanker
 import torch

@@ -6,7 +6,7 @@ from ir_measures import *
 from os.path import join
 from fire import Fire
 
-from . import MARCO, RATIOS, Order, IR_DATASETS, get_sample
+from .. import MARCO, RATIOS, Order, IR_DATASETS, get_sample
 
 def create_synthetic(out_path : str, n_samples : int = 10):
     marco = irds.load(MARCO)
