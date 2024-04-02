@@ -45,6 +45,28 @@ class MainLog:
     @property
     def out_tokens(self):
         return sum([i.out_tokens for i in self.queries])
+    
+class RankedList(object):
+    def __init__(self, doc_texts=None, doc_idx=None) -> None:
+        self.doc_texts = doc_texts if doc_texts is not None else np.array([])
+        self.doc_idx = doc_idx if doc_idx is not None else np.array([])
+    
+    def __len__(self):
+        return len(self.doc_idx)
+
+    def __getitem__(self, key):
+        if isinstance(key, slice):
+            start, stop, step = key.indices(len(self))
+            return RankedList(self.doc_ids[start:stop], self.doc_texts[start:stop])
+        elif isinstance(key, int):
+            return RankedList(np.array([self.doc_ids[key]]), np.array([self.doc_texts[key]]))
+        else:
+            raise TypeError("Invalid key type. Please use int or slice.")
+    
+    def __add__(self, other):
+        if not isinstance(other, RankedList):
+            raise TypeError("Unsupported operand type(s) for +: 'RankedList' and '{}'".format(type(other)))
+        return RankedList(concat(self.doc_texts, other.doc_texts), concat(self.doc_idx, other.doc_idx))
 
 class ListWiseTransformer(pt.Transformer, ABC):
 
@@ -86,7 +108,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
     def score(self, *args, **kwargs):
         raise NotImplementedError
     
-    def _pivot(self, qid : str, query : str, doc_idx : List[str], doc_texts : List[str]):
+    def _pivot(self, qid : str, query : str, ranking : RankedList):
         '''
         l : current left partition being scored
         r : current right partition being the remainder of the array
@@ -94,73 +116,68 @@ class ListWiseTransformer(pt.Transformer, ABC):
         b : current backfill
         p : current pivot
         '''
-        logging.info(f"Processing query {qid} with {len(doc_idx)} documents")
-        l_idx, l_text = doc_idx[:self.window_size], doc_texts[:self.window_size]
-        r_idx, r_text = doc_idx[self.window_size:], doc_texts[self.window_size:]
+        logging.info(f"Processing query {qid} with {len(ranking)} documents")
+        l = ranking[:self.window_size]
+        r = ranking[self.window_size:]
 
         kwargs = {
             'qid': qid,
             'query': query,
-            'doc_text': l_text,
-            'doc_idx': l_idx,
+            'doc_text': l.doc_texts,
+            'doc_idx': l.doc_idx,
             'start_idx': 0,
-            'end_idx': len(l_text), # initial sort may be less than window size
-            'window_len': len(l_text)
+            'end_idx': len(l), # initial sort may be less than window size
+            'window_len': len(l)
         }
 
         order = np.array(self.score(**kwargs))
-        orig_idxs = np.arange(len(l_text))
-        l_idx[orig_idxs], l_text[orig_idxs],  = l_idx[order], l_text[order]
-        logging.info(f"Initial sort complete for query {qid}, len: {len(l_text)}")
-        if len(l_text) < self.window_size: 
+        orig_idxs = np.arange(len(l))
+        l.doc_idx[orig_idxs], l.doc_texts[orig_idxs],  = l.doc_idx[order], l.doc_texts[order]
+        logging.info(f"Initial sort complete for query {qid}, len: {len(l)}")
+        if len(l) < self.window_size: 
             logging.info('Breaking out')
-            #breakpoint()
-            return l_idx, l_text, r_idx, r_text, True # breakout as only single sort is required
-        p_id, p_text = l_idx[self.cutoff], l_text[self.cutoff]
-
-        c_idx, c_text = l_idx[:self.cutoff], l_text[:self.cutoff] # create initial < p
-        b_idx, b_text = l_idx[self.cutoff+1:], l_text[self.cutoff+1:] # create initial > p
-        #breakpoint()
+            return l, r, True # breakout as only single sort is required
+        p = l[self.cutoff]
+        c = l[:self.cutoff]
+        b = l[self.cutoff+1:]
         sub_window_size = self.window_size - 1 # account for addition of p
 
-        while len(c_text) < self.buffer and len(r_text) > 0:
-            l_text, r_text = _split(r_text, sub_window_size)
-            l_idx, r_idx = _split(r_idx, sub_window_size)
-
-            # prepend pivot to left partition
-            l_text = concat([[p_text], l_text])
-            l_idx = concat([[p_id], l_idx])
+        while len(c) < self.buffer and len(r) > 0:
+            l, r = _split(r, sub_window_size)
+            l = p + l
 
             kwargs = {
                 'qid': qid,
                 'query': query,
-                'doc_text': l_text,
-                'doc_idx': l_idx,
+                'doc_text': l.doc_texts,
+                'doc_idx': l.doc_idx,
                 'start_idx': 0,
-                'end_idx': len(l_text),
-                'window_len': len(l_text)
+                'end_idx': len(l),
+                'window_len': len(l)
             }
 
             order = np.array(self.score(**kwargs))
-            orig_idxs = np.arange(len(l_text))
-            l_idx[orig_idxs], l_text[orig_idxs],  = l_idx[order], l_text[order]
+            orig_idxs = np.arange(len(l))
+            l.doc_idx[orig_idxs], l.doc_texts[orig_idxs],  = l.doc_idx[order], l.doc_texts[order]
 
-            p_idx = np.where(l_idx == p_id)[0][0] # find index of pivot id
+            p_idx = np.where(l.doc_idx == p.doc_idx[0])[0][0] # find index of pivot id
             # add left of pivot to candidates and right of pivot to backfill
-            c_text = concat([c_text, l_text[:p_idx]])
-            c_idx = concat([c_idx, l_idx[:p_idx]])
-            b_text = concat([b_text, l_text[p_idx+1:]])
-            b_idx = concat([b_idx, l_idx[p_idx+1:]])
+
+            c = c + l[:p_idx]
+            b = b + l[p_idx+1:]
         
         # we have found no candidates better than p
-        if len(c_text) == self.cutoff - 1: return concat([c_idx, [p_id]]), concat([c_text, [p_text]]), concat([b_idx, r_idx]), concat([b_text, r_text]), True 
+        if len(c) == self.cutoff - 1: 
+            top = c + p 
+            bottom = b + r
+            return top, bottom, True 
         # we have found candidates better than p
 
-        # split c_idx and c_text by budget b
-        c_idx, ac_idx = _split(c_idx, self.buffer)
-        c_text, ac_text = _split(c_text, self.buffer)
+        # split c by budget b
+        c, ac = _split(c, self.buffer)
+        ac = ac + p + b + r
 
-        return c_idx, c_text, concat([ac_idx, [p_id], b_idx, r_idx]), concat([ac_text, [p_text], b_text, r_text]), False
+        return c, ac, False
     
     def pivot(self, query : str, query_results : pd.DataFrame):
         qid = query_results['qid'].iloc[0]
@@ -171,20 +188,19 @@ class ListWiseTransformer(pt.Transformer, ABC):
 
         indicator = False
         num_iters = 0
-        c_idx, c_text = doc_idx, doc_texts
-        b_idx, b_text = [], []
+        c = RankedList(doc_texts, doc_idx)
+        b = RankedList()
 
         while not indicator and num_iters < self.max_iters:
             num_iters += 1
-            c_idx, c_text, _idx, _text, indicator = self._pivot(qid, query, c_idx, c_text)
-            b_idx = concat([b_idx, _idx])
-            b_text = concat([b_text, _text])
+            c, _b, indicator = self._pivot(qid, query, c)
+            b = b + _b
         if num_iters == self.max_iters:
             print(f"WARNING: max_iters reached for query {qid}")
 
         self.log.queries.append(self.current_query)
-
-        return concat([c_idx, b_idx]), concat([c_text, b_text])
+        out = c + b
+        return out.doc_idx, out.doc_texts
     
     def sliding_window(self, query : str, query_results : pd.DataFrame):
         qid = query_results['qid'].iloc[0]
@@ -192,12 +208,13 @@ class ListWiseTransformer(pt.Transformer, ABC):
         query_results = query_results.sort_values('score', ascending=False)
         doc_idx = query_results['docno'].to_numpy()
         doc_texts = query_results['text'].to_numpy()
+        ranking = RankedList(doc_texts, doc_idx)
         for start_idx, end_idx, window_len in _iter_windows(len(query_results), self.window_size, self.stride):
             kwargs = {
             'qid': qid,
             'query': query,
-            'doc_text': doc_texts[start_idx:end_idx],
-            'doc_idx': doc_idx[start_idx:end_idx],
+            'doc_text': ranking[start_idx:end_idx].doc_texts,
+            'doc_idx': ranking[start_idx:end_idx].doc_idx,
             'start_idx': start_idx,
             'end_idx': end_idx,
             'window_len': window_len
@@ -205,10 +222,10 @@ class ListWiseTransformer(pt.Transformer, ABC):
             order = np.array(self.score(**kwargs))
             new_idxs = start_idx + order
             orig_idxs = np.arange(start_idx, end_idx)
-            doc_idx[orig_idxs] = doc_idx[new_idxs]
-            doc_texts[orig_idxs] = doc_texts[new_idxs]
+            ranking.doc_idx[orig_idxs] = ranking.doc_idx[new_idxs]
+            ranking.doc_texts[orig_idxs] = ranking.doc_texts[new_idxs]
         self.log.queries.append(self.current_query)
-        return doc_idx, doc_texts
+        return ranking.doc_idx, ranking.doc_texts
     
     def single_window(self, query : str, query_results : pd.DataFrame):
         qid = query_results['qid'].iloc[0]
@@ -240,21 +257,21 @@ class ListWiseTransformer(pt.Transformer, ABC):
     
     # from https://github.com/ielab/llm-rankers/blob/main/llmrankers/setwise.py
 
-    def _heapify(self, query, doc_texts, doc_idx, n, i):
+    def _heapify(self, query, ranking, n, i):
         # Find largest among root and children
         largest = i
         l = 2 * i + 1
         r = 2 * i + 2
         li_comp = self.score(**{
             'query': query['query'].iloc[0],
-            'doc_text': [query['text'].iloc[l], query['text'].iloc[i]],
+            'doc_text': [ranking.doc_texts[i], ranking.doc_texts[l]],
             'start_idx': 0,
             'end_idx': 1,
             'window_len': 2
         })
         rl_comp = self.score(**{
             'query': query['query'].iloc[0],
-            'doc_text': [query['text'].iloc[r], query['text'].iloc[largest]],
+            'doc_text': [ranking.doc_texts[r], ranking.doc_texts[largest]],
             'start_idx': 0,
             'end_idx': 1,
             'window_len': 2
@@ -266,9 +283,9 @@ class ListWiseTransformer(pt.Transformer, ABC):
 
         # If root is not largest, swap with largest and continue heapifying
         if largest != i:
-            doc_texts[i], doc_texts[largest] = doc_texts[largest], doc_texts[i]
-            doc_idx[i], doc_idx[largest] = doc_idx[largest], doc_idx[i]
-            self._heapify(query, doc_texts, doc_idx, n, largest)
+            ranking.doc_texts[i], ranking.doc_texts[largest] = ranking.doc_texts[largest], ranking.doc_texts[i]
+            ranking.doc_idx[i], ranking.doc_idx[largest] = ranking.doc_idx[largest], ranking.doc_idx[i]
+            self._heapify(query, ranking, n, largest)
 
     def _setwise(self, query : str, query_results : pd.DataFrame):
         self.current_query = QueryLog(qid=qid)
@@ -276,22 +293,23 @@ class ListWiseTransformer(pt.Transformer, ABC):
         query_results = query_results.sort_values('score', ascending=False)
         doc_idx = query_results['docno'].to_numpy()
         doc_texts = query_results['text'].to_numpy()
+        ranking = RankedList(doc_texts, doc_idx)
         n = len(query_results)
         ranked = 0
         # Build max heap
         for i in range(n // 2, -1, -1):
-            self._heapify(query, doc_texts, doc_idx, n, i)
+            self._heapify(query, ranking, n, i)
         for i in range(n - 1, 0, -1):
             # Swap
-            doc_idx[i], doc_idx[0] = doc_idx[0], doc_idx[i]
-            doc_texts[i], doc_texts[0] = doc_texts[0], doc_texts[i]
+            ranking.doc_idx[i], ranking.doc_idx[0] = ranking.doc_idx[0], ranking.doc_idx[i]
+            ranking.doc_texts[i], ranking.doc_texts[0] = ranking.doc_texts[0], ranking.doc_texts[i]
             ranked += 1
             if ranked == self.k:
                 break
             # Heapify root element
-            self._heapify(query, doc_texts, doc_idx, i, 0)     
+            self._heapify(query, ranking, i, 0)     
         self.log.queries.append(self.current_query)
-        return doc_idx, doc_texts  
+        return ranking.doc_idx, ranking.doc_texts  
 
     def transform(self, inp : pd.DataFrame):
         res = {
