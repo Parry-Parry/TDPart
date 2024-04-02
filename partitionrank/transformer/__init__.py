@@ -240,45 +240,58 @@ class ListWiseTransformer(pt.Transformer, ABC):
     
     # from https://github.com/ielab/llm-rankers/blob/main/llmrankers/setwise.py
 
-    def _heapify(self, arr, n, i, query):
+    def _heapify(self, query, doc_texts, doc_idx, n, i):
         # Find largest among root and children
-        if self.num_child * i + 1 < n:  # if there are children
-            docs = [arr[i]] + arr[self.num_child * i + 1: min((self.num_child * (i + 1) + 1), n)]
-            inds = [i] + list(range(self.num_child * i + 1, min((self.num_child * (i + 1) + 1), n)))
+        largest = i
+        l = 2 * i + 1
+        r = 2 * i + 2
+        li_comp = self.score(**{
+            'query': query['query'].iloc[0],
+            'doc_text': [query['text'].iloc[l], query['text'].iloc[i]],
+            'start_idx': 0,
+            'end_idx': 1,
+            'window_len': 2
+        })
+        rl_comp = self.score(**{
+            'query': query['query'].iloc[0],
+            'doc_text': [query['text'].iloc[r], query['text'].iloc[largest]],
+            'start_idx': 0,
+            'end_idx': 1,
+            'window_len': 2
+        })
+        if l < n and li_comp == 0:
+            largest = l
+        if r < n and rl_comp == 0:
+            largest = r
 
-            kwargs = {
-                'qid': query['qid'].iloc[0],
-                'query': query['query'].iloc[0],
-                'doc_text': query['text'].iloc[inds],
-                'doc_idx': query['docno'].iloc[inds],
-                'start_idx': 0,
-                'end_idx': len(inds),
-                'window_len': len(inds)
-            }
-            order = np.array(self.score(**kwargs))[0]
-            if largest != i:
-                arr[i], arr[largest] = arr[largest], arr[i]
-                self._heapify(arr, n, largest, query)
+        # If root is not largest, swap with largest and continue heapifying
+        if largest != i:
+            doc_texts[i], doc_texts[largest] = doc_texts[largest], doc_texts[i]
+            doc_idx[i], doc_idx[largest] = doc_idx[largest], doc_idx[i]
+            self._heapify(query, doc_texts, doc_idx, n, largest)
 
     def _setwise(self, query : str, query_results : pd.DataFrame):
-        qid = query_results['qid'].iloc[0]
         self.current_query = QueryLog(qid=qid)
+        qid = query_results['qid'].iloc[0]
         query_results = query_results.sort_values('score', ascending=False)
         doc_idx = query_results['docno'].to_numpy()
         doc_texts = query_results['text'].to_numpy()
         n = len(query_results)
         ranked = 0
         # Build max heap
-        for i in range(n // self.num_child, -1, -1):
-            self.heapify(arr, n, i, query)
+        for i in range(n // 2, -1, -1):
+            self._heapify(query, doc_texts, doc_idx, n, i)
         for i in range(n - 1, 0, -1):
             # Swap
-            arr[i], arr[0] = arr[0], arr[i]
+            doc_idx[i], doc_idx[0] = doc_idx[0], doc_idx[i]
+            doc_texts[i], doc_texts[0] = doc_texts[0], doc_texts[i]
             ranked += 1
-            if ranked == k:
+            if ranked == self.k:
                 break
             # Heapify root element
-            self._heapify(arr, i, 0, query)        
+            self._heapify(query, doc_texts, doc_idx, i, 0)     
+        self.log.queries.append(self.current_query)
+        return doc_idx, doc_texts  
 
     def transform(self, inp : pd.DataFrame):
         res = {

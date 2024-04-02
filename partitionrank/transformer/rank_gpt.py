@@ -2,6 +2,7 @@ from typing import List
 from partitionrank.transformer import ListWiseTransformer
 from partitionrank.modelling.gpt import GPTRanker
 import torch
+import numpy as np
 import os
 
 class RankGPT(ListWiseTransformer):
@@ -18,4 +19,4 @@ class RankGPT(ListWiseTransformer):
     def score(self, query : str, doc_text : List[str], window_len : int, **kwargs):
         self.current_query.inferences += 1
         order = self.model(query=query, texts=doc_text.tolist(), num=window_len)
-        return order
+        return np.array(order)

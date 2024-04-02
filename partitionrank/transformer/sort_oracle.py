@@ -1,6 +1,7 @@
 import pyterrier as pt 
 if not pt.started(): pt.init()
 from . import ListWiseTransformer
+import numpy as np
 
 class SortOracleTransformer(ListWiseTransformer):
     def __init__(self, 
@@ -15,4 +16,4 @@ class SortOracleTransformer(ListWiseTransformer):
         self.current_query.inferences += 1
         doc_text = doc_text.tolist()
         order = sorted(range(len(doc_text)), key=lambda k: doc_text[k], reverse=True)
-        return order
+        return np.array(order)

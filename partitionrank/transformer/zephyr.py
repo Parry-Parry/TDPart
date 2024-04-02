@@ -3,6 +3,7 @@ from partitionrank.transformer import ListWiseTransformer
 from partitionrank.modelling.prompt import RankPrompt
 from partitionrank.modelling.base import LLMRanker
 import torch
+import numpy as np
 
 class RankZephyr(ListWiseTransformer):
 
@@ -22,4 +23,4 @@ class RankZephyr(ListWiseTransformer):
         self.current_query.inferences += 1
         prompt = self.prompt(query=query, texts=doc_text.tolist(), num=window_len)
         order = self.model(text=prompt, window_len=window_len)
-        return order
+        return np.array(order)
