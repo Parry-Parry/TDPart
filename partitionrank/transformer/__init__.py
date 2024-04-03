@@ -65,6 +65,7 @@ class RankedList(object):
             raise TypeError("Invalid key type. Please use int, slice, list, or numpy array.")
 
     def __setitem__(self, key, value):
+        # THIS IS INCORRECT
         if isinstance(key, int):
             self.doc_idx[key], self.doc_texts[key] = value
         elif isinstance(key, (list, np.ndarray)):
