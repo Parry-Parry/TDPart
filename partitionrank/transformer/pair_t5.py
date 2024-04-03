@@ -52,6 +52,7 @@ Output Passage A or Passage B:"""
                                                            return_tensors="pt",
                                                            add_special_tokens=False).to(self.model.device)
         self.decoder_input_ids = self.decoder_input_ids.repeat(self.batch_size, 1)
+        self.A, self.B = self.tokenizer.encode("A")[0], self.tokenizer.encode("B")[0]
 
     def score(self, query : str, doc_texts : list, **kwargs):
         idx = create_pairs(len(doc_texts))
