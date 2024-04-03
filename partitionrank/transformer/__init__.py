@@ -114,7 +114,8 @@ class ListWiseTransformer(pt.Transformer, ABC):
         self.process = {
             'sliding': self.sliding_window,
             'pivot': self.pivot,
-            'single': self.single_window
+            'single': self.single_window,
+            'setwise': self._setwise
         }[mode]
 
     
