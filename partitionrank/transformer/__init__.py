@@ -71,7 +71,7 @@ class RankedList(object):
             self.doc_idx[key], self.doc_texts[key] = value.doc_idx, value.doc_texts
         elif isinstance(key, slice):
             self.doc_idx[key], self.doc_texts[key] = value.doc_idx, value.doc_texts
-        elif isinstance(key, (list, np.array))):
+        elif isinstance(key, (list, np.array)):
             if len(key) != len(value):
                 raise ValueError("Assigning RankedList requires the same length as the key.")
             for i, idx in enumerate(key):
