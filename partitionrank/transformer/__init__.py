@@ -82,7 +82,7 @@ class RankedList(object):
     def __add__(self, other):
         if not isinstance(other, RankedList):
             raise TypeError("Unsupported operand type(s) for +: 'RankedList' and '{}'".format(type(other)))
-        return RankedList(self.doc_idx + other.doc_idx, self.doc_texts + other.doc_texts)
+        return RankedList(concat(self.doc_idx, other.doc_idx), concat(self.doc_texts, other.doc_texts))
 
 class ListWiseTransformer(pt.Transformer, ABC):
 
