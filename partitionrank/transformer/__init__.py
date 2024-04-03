@@ -66,19 +66,16 @@ class RankedList(object):
 
     def __setitem__(self, key, value):
         # THIS IS INCORRECT
+
         if isinstance(key, int):
-            self.doc_idx[key], self.doc_texts[key] = value
-        elif isinstance(key, (list, np.ndarray)):
-            if isinstance(value, RankedList):
-                if len(key) != len(value):
-                    raise ValueError("Assigning RankedList requires the same length as the key.")
-                for i, idx in enumerate(key):
-                    self.doc_idx[idx], self.doc_texts[idx] = value.doc_idx[i], value.doc_texts[i]
-            else:
-                for i, idx in enumerate(key):
-                    self.doc_idx[idx], self.doc_texts[idx] = value[i]
-        else:
-            raise TypeError("Invalid key type. Please use int, list, or numpy array.")
+            self.doc_idx[key], self.doc_texts[key] = value.doc_idx, value.doc_texts
+        elif isinstance(key, slice):
+            self.doc_idx[key], self.doc_texts[key] = value.doc_idx, value.doc_texts
+        elif isinstance(key, (list, np.array))):
+            if len(key) != len(value):
+                raise ValueError("Assigning RankedList requires the same length as the key.")
+            for i, idx in enumerate(key):
+                self.doc_idx[idx], self.doc_texts[idx] = value.doc_idx[i], value.doc_texts[i]
 
     def __add__(self, other):
         if not isinstance(other, RankedList):
