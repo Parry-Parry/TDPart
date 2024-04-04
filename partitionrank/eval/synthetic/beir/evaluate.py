@@ -10,9 +10,11 @@ from typing import Any
 from os.path import join
 from partitionrank.eval import LOAD_FUNCS
 from partitionrank.eval.synthetic import Order
+import os
 
 def evaluate(in_path : str, out_path : str, model : Any, dataset : str, mode='single', cutoff=2):
-
+    if os.path.exists(join(out_path, f"{model}.{mode}.tsv.gz")):
+        return
     corpus = irds.load(dataset)
     all_qrels = pd.DataFrame(corpus.qrels_iter())
     eval = evaluator([nDCG@10, nDCG@5, nDCG@1], all_qrels)
