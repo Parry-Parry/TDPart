@@ -38,7 +38,7 @@ def evaluate(in_path : str, out_path : str, model : Any):
         for i in range(10):
             for order in range(3):
                 _order = Order(order)
-                for ratio in RATIOS[window_len]:
+                for ratio in [0.2, 0.4, 0.6, 0.8]:
                     _ratio = str(ratio).replace('.', '_')
                     input_name = f"{_order.name}.{_ratio}.{window_len}.{i}.tsv.gz"
                     sample = pd.read_csv(join(in_path, input_name), sep='\t', dtype={'docno': str, 'qid': str})
