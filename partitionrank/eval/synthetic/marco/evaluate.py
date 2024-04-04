@@ -9,7 +9,7 @@ from ir_measures import evaluator
 from typing import Any
 from os.path import join
 from partitionrank.eval import LOAD_FUNCS
-from partitionrank.eval.synthetic import RATIOS, Order, IR_DATASETS
+from partitionrank.eval.synthetic import Order, IR_DATASETS
 
 def evaluate(in_path : str, out_path : str, model : Any):
     datasets = {}
