@@ -8,7 +8,7 @@ from fire import Fire
 
 from .. import Order, get_sample
 
-def create_synthetic(dataset : str, out_path : str, n_samples : int = 10):
+def create_synthetic(dataset : str, out_path : str, n_samples : int = 10, cutoff : int = 2):
     corpus = irds.load(dataset)
     all_qrels = pd.DataFrame(corpus.qrels_iter())
     all_queries = pd.DataFrame(corpus.queries_iter()).set_index('query_id').text.to_dict()
@@ -16,8 +16,8 @@ def create_synthetic(dataset : str, out_path : str, n_samples : int = 10):
 
     # filter queries by whether or not they have at least 19 relevant documents
 
-    all_queries = {qid: query for qid, query in all_queries.items() if len(all_qrels[(all_qrels['query_id'] == qid) & (all_qrels['relevance'].isin([2, 3]))]) >= 19}
-    all_queries = {qid: query for qid, query in all_queries.items() if len(all_qrels[(all_qrels['query_id'] == qid) & (all_qrels['relevance'].isin([0,1]))]) >= 19}
+    all_queries = {qid: query for qid, query in all_queries.items() if len(all_qrels[(all_qrels['query_id'] == qid) & (all_qrels['relevance'] >= cutoff)]) >= 19}
+    all_queries = {qid: query for qid, query in all_queries.items() if len(all_qrels[(all_qrels['query_id'] == qid) & (all_qrels['relevance'] < cutoff)]) >= 19}
 
     print(f"Number of queries: {len(all_queries)}")
 
