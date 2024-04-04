@@ -12,7 +12,7 @@ from partitionrank.eval import LOAD_FUNCS
 from partitionrank.eval.synthetic import Order
 import os
 
-def evaluate(in_path : str, out_path : str, model : Any, dataset : str, mode='single', cutoff=2):
+def evaluate(in_path : str, out_path : str, model : Any, dataset : str, pt_dataset : str, mode='single', cutoff=2):
     if os.path.exists(join(out_path, f"{model}.{mode}.tsv.gz")):
         return
     corpus = irds.load(dataset)
@@ -34,7 +34,7 @@ def evaluate(in_path : str, out_path : str, model : Any, dataset : str, mode='si
     
     progress = tqdm(total=10*3*4)
     for window_len in [5, 10, 20]:
-        _model = LOAD_FUNCS[model](dataset=pt.get_dataset('irds:{dataset}'), mode=mode, window_size=window_len, cutoff=window_len-1)
+        _model = LOAD_FUNCS[model](dataset=pt.get_dataset(pt_dataset), mode=mode, window_size=window_len, cutoff=window_len-1)
         for i in range(10):
             for order in range(3):
                 _order = Order(order)
