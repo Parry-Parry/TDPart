@@ -11,7 +11,7 @@ from os.path import join
 from partitionrank.eval import LOAD_FUNCS
 from partitionrank.eval.synthetic import Order
 
-def evaluate(in_path : str, out_path : str, model : Any, dataset : str, mode='single'):
+def evaluate(in_path : str, out_path : str, model : Any, dataset : str, mode='single', cutoff=2):
 
     corpus = irds.load(dataset)
     all_qrels = pd.DataFrame(corpus.qrels_iter())
