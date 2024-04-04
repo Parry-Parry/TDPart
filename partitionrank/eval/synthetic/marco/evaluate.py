@@ -32,7 +32,7 @@ def evaluate(in_path : str, out_path : str, model : Any):
     }
 
     
-    progress = tqdm(total=10*3*(len(RATIOS[5]) + len(RATIOS[10]) + len(RATIOS[20])))
+    progress = tqdm(total=10*3*(3*4))
     for window_len in [5, 10, 20]:
         _model = LOAD_FUNCS[model](dataset=pt.get_dataset('irds:msmarco-passage'), mode='single', window_size=window_len, cutoff=window_len-1)
         for i in range(10):
