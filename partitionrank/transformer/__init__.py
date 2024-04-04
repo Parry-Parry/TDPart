@@ -47,7 +47,7 @@ class MainLog:
         return sum([i.out_tokens for i in self.queries])
     
 class RankedList(object):
-    def __init__(self, doc_texts=None, doc_idx=None) -> None:
+    def __init__(self, doc_idx=None, doc_texts=None) -> None:
         self.doc_texts = doc_texts if doc_texts is not None else np.array([])
         self.doc_idx = doc_idx if doc_idx is not None else np.array([])
     
@@ -58,29 +58,31 @@ class RankedList(object):
         if isinstance(key, slice):
             return RankedList(self.doc_idx[key], self.doc_texts[key])
         elif isinstance(key, int):
-            return self.doc_idx[key], self.doc_texts[key]
-        elif isinstance(key, (list, np.ndarray)):
+            return RankedList(np.array([self.doc_idx[key]]), np.array([self.doc_texts[key]]))
+        elif isinstance(key, list) or isinstance(key, np.ndarray):
             return RankedList([self.doc_idx[i] for i in key], [self.doc_texts[i] for i in key])
         else:
             raise TypeError("Invalid key type. Please use int, slice, list, or numpy array.")
 
     def __setitem__(self, key, value):
-        # THIS IS INCORRECT
-
         if isinstance(key, int):
-            self.doc_idx[key], self.doc_texts[key] = value.doc_idx, value.doc_texts
+            self.doc_idx[key], self.doc_texts[key] = value.doc_idx[0], value.doc_texts[0]
         elif isinstance(key, slice):
             self.doc_idx[key], self.doc_texts[key] = value.doc_idx, value.doc_texts
-        elif isinstance(key, (list, np.array)):
+        elif isinstance(key, list) or isinstance(key, np.ndarray):
             if len(key) != len(value):
                 raise ValueError("Assigning RankedList requires the same length as the key.")
             for i, idx in enumerate(key):
                 self.doc_idx[idx], self.doc_texts[idx] = value.doc_idx[i], value.doc_texts[i]
 
     def __add__(self, other):
+        print(type(other))
         if not isinstance(other, RankedList):
             raise TypeError("Unsupported operand type(s) for +: 'RankedList' and '{}'".format(type(other)))
-        return RankedList(concat(self.doc_idx, other.doc_idx), concat(self.doc_texts, other.doc_texts))
+        return RankedList(concat([self.doc_idx, other.doc_idx]), concat([self.doc_texts, other.doc_texts]))
+      
+    def __str__(self):
+      return f"{self.doc_idx}, {self.doc_texts}"
 
 class ListWiseTransformer(pt.Transformer, ABC):
 
