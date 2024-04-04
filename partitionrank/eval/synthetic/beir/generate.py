@@ -30,7 +30,7 @@ def create_synthetic(dataset : str, out_path : str, n_samples : int = 10, cutoff
                     output_name = f"{_order.name}.{_ratio}.{window_len}.{i}.tsv.gz"
                     frame = []
                     for qid, query in all_queries.items():
-                        sample = get_sample(all_qrels, qid, window_len, order, ratio)
+                        sample = get_sample(all_qrels, qid, window_len, order, ratio, cutoff)
                         sample['text'] = sample['docno'].apply(lambda x: all_docs[str(x)])
                         sample['query'] = query
                         frame.append(sample)

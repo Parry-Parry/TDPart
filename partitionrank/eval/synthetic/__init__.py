@@ -10,11 +10,11 @@ class Order(Enum):
     ASC = 1
     DESC = 2
 
-def get_sample(qrels, qid, num_items : int = 20, order = Order.RANDOM, ratio : int = 1):
+def get_sample(qrels, qid, num_items : int = 20, order = Order.RANDOM, ratio : int = 1, cutoff : int = 2):
     ratio = int(ratio * num_items)
     qrels = qrels[qrels['query_id'] == str(qid)]
-    non_relevant = qrels[qrels['relevance'].isin([0, 1])].copy()
-    relevant = qrels[qrels['relevance'].isin([2, 3])].copy()
+    non_relevant = qrels[qrels['relevance'] < cutoff].copy()
+    relevant = qrels[qrels['relevance'] >= cutoff].copy()
     non_relevant = non_relevant.sample(n=num_items-ratio, replace=False)
     if len(relevant) < ratio: raise ValueError("Not enough relevant documents")
     relevant = relevant.sample(n=ratio, replace=False)
