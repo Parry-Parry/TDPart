@@ -57,7 +57,7 @@ def evaluate(in_path : str, out_path : str, model : Any, dataset : str, mode='si
                     output['after_nDCG@1'].append(metrics['nDCG@1'])
                     progress.update(1)
     
-    out_name = f"{model}.tsv.gz"
+    out_name = f"{model}.{mode}.tsv.gz"
     pd.DataFrame(output).to_csv(join(out_path, out_name), sep='\t', index=False)
 
 if __name__ == '__main__':
