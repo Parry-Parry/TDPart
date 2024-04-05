@@ -54,12 +54,12 @@ Output Passage A or Passage B:"""
         self.decoder_input_ids = self.decoder_input_ids.repeat(self.batch_size, 1)
         self.A, self.B = self.tokenizer.encode("A")[0], self.tokenizer.encode("B")[0]
 
-    def score(self, query : str, doc_texts : list, **kwargs):
-        idx = create_pairs(len(doc_texts))
-        score_matrix = np.zeros((len(doc_texts), len(doc_texts)))
+    def score(self, query : str, doc_text : list, **kwargs):
+        idx = create_pairs(len(doc_text))
+        score_matrix = np.zeros((len(doc_text), len(doc_text)))
 
         for batch in tqdm(chunked(idx, self.batch_size), unit='batch'):
-            prompts = [self.template.format(query=query, doc1=doc_texts[i], doc2=doc_texts[j]) for i, j in batch]
+            prompts = [self.template.format(query=query, doc1=doc_text[i], doc2=doc_text[j]) for i, j in batch]
             inputs = self.tokenizer(prompts,
                                        padding='longest',
                                        return_tensors="pt").input_ids.to(self.model.device)
@@ -68,8 +68,8 @@ Output Passage A or Passage B:"""
             for (i, j), score in zip(batch, scores):
                 score_matrix[i, j] = score
         
-        for i in range(len(doc_texts)):
-            for j in range(len(doc_texts)):
+        for i in range(len(doc_text)):
+            for j in range(len(doc_text)):
                 if score_matrix[i, j] > 0.5 and score_matrix[j, i] < 0.5: score_matrix[i, j], score_matrix[j, i] = 1., 0.
                 elif score_matrix[i, j] < 0.5 and score_matrix[j, i] > 0.5: score_matrix[i, j], score_matrix[j, i] = 0., 1.
                 else: score_matrix[i, j], score_matrix[j, i] = 0.5, 0.5

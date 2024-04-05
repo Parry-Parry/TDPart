@@ -300,8 +300,8 @@ class ListWiseTransformer(pt.Transformer, ABC):
             self._heapify(query, ranking, n, largest)
 
     def _setwise(self, query : str, query_results : pd.DataFrame):
-        self.current_query = QueryLog(qid=qid)
         qid = query_results['qid'].iloc[0]
+        self.current_query = QueryLog(qid=qid)
         query_results = query_results.sort_values('score', ascending=False)
         doc_idx = query_results['docno'].to_numpy()
         doc_texts = query_results['text'].to_numpy()
