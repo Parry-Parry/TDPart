@@ -112,7 +112,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
 
         self.log = MainLog()
         self.current_query = None
-
+        print(f"Mode: {mode}")
         self.process = {
             'sliding': self.sliding_window,
             'pivot': self.pivot,
