@@ -40,7 +40,7 @@ def evaluate(in_path : str, out_path : str, model : Any, dataset : str, pt_datas
             del _model
             torch.cuda.empty_cache()
         _model = LOAD_FUNCS[model](dataset=pt.get_dataset(pt_dataset), mode=mode, window_size=window_len, cutoff=window_len-1)
-        for i in range(10):
+        for i in range(5):
             for order in range(3):
                 _order = Order(order)
                 for ratio in [0.2, 0.4, 0.6, 0.8]:
