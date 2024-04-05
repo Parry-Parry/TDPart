@@ -33,7 +33,7 @@ def evaluate(in_path : str, out_path : str, model : Any):
     }
 
     
-    progress = tqdm(total=10*3*(3*4))
+    progress = tqdm(total=5*3*(3*4))
     for window_len in [5, 10, 20]:
         if _model is not None:
             del _model
