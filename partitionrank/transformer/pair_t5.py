@@ -176,7 +176,7 @@ Output Passage A or Passage B:"""
 
             for k in range(0, len(outputs)):
                 i, j = batch[k]
-                output1 = outputs[i]
+                output1 = outputs[k]
                 if output1 == "Passage A":
                     score_matrix[i, j] = 1
                     score_matrix[j, i] = 0
