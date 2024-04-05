@@ -278,14 +278,14 @@ class ListWiseTransformer(pt.Transformer, ABC):
         l = 2 * i + 1
         r = 2 * i + 2
         li_comp = self.score(**{
-            'query': query['query'].iloc[0],
+            'query': query,
             'doc_text': [ranking.doc_texts[i], ranking.doc_texts[l]],
             'start_idx': 0,
             'end_idx': 1,
             'window_len': 2
         })
         rl_comp = self.score(**{
-            'query': query['query'].iloc[0],
+            'query': query,
             'doc_text': [ranking.doc_texts[r], ranking.doc_texts[largest]],
             'start_idx': 0,
             'end_idx': 1,
