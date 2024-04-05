@@ -9,7 +9,7 @@ from ir_measures import evaluator
 from typing import Any
 from os.path import join
 from partitionrank.eval import LOAD_FUNCS
-from partitionrank.eval.synthetic import RATIOS, Order, IR_DATASETS
+from partitionrank.eval.synthetic import Order, IR_DATASETS
 
 def evaluate(in_path : str, out_path : str, model : Any):
     datasets = {}
@@ -32,13 +32,13 @@ def evaluate(in_path : str, out_path : str, model : Any):
     }
 
     
-    progress = tqdm(total=10*3*(len(RATIOS[5]) + len(RATIOS[10]) + len(RATIOS[20])))
+    progress = tqdm(total=10*3*(3*4))
     for window_len in [5, 10, 20]:
         _model = LOAD_FUNCS[model](dataset=pt.get_dataset('irds:msmarco-passage'), mode='single', window_size=window_len, cutoff=window_len-1)
         for i in range(10):
             for order in range(3):
                 _order = Order(order)
-                for ratio in RATIOS[window_len]:
+                for ratio in [0.2, 0.4, 0.6, 0.8]:
                     _ratio = str(ratio).replace('.', '_')
                     input_name = f"{_order.name}.{_ratio}.{window_len}.{i}.tsv.gz"
                     sample = pd.read_csv(join(in_path, input_name), sep='\t', dtype={'docno': str, 'qid': str})
