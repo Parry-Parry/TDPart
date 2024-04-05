@@ -54,22 +54,34 @@ Output Passage A or Passage B:"""
         self.decoder_input_ids = self.decoder_input_ids.repeat(self.batch_size, 1)
         self.A, self.B = self.tokenizer.encode("A")[0], self.tokenizer.encode("B")[0]
 
-    def score(self, query : str, doc_text : list, **kwargs):
-        idx = create_pairs(len(doc_text))
-        score_matrix = np.zeros((len(doc_text), len(doc_text)))
-
+    def score(self, query : str, doc_texts : list, **kwargs):
+        idx = create_pairs(len(doc_texts))
+        score_matrix = np.zeros((len(doc_texts), len(doc_texts)))
         for batch in tqdm(chunked(idx, self.batch_size), unit='batch'):
-            prompts = [self.template.format(query=query, doc1=doc_text[i], doc2=doc_text[j]) for i, j in batch]
+            self.current_query.inferences += len(batch)
+            prompts = [self.template.format(query=query, doc1=doc_texts[i], doc2=doc_texts[j]) for i, j in batch]
             inputs = self.tokenizer(prompts,
                                        padding='longest',
                                        return_tensors="pt").input_ids.to(self.model.device)
-            outputs = self.model.generate(inputs, decoder_input_ids=self.decoder_input_ids, max_new_tokens=2)
-            scores = outputs[:, (self.A, self.B)].softmax(dim=-1)[:, 0].tolist()
-            for (i, j), score in zip(batch, scores):
-                score_matrix[i, j] = score
+            with torch.no_grad():
+                outputs = self.model.generate(inputs, decoder_input_ids=self.decoder_input_ids, max_new_tokens=2)
+            outputs = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
+
+            for k in range(0, len(outputs)):
+                i, j = batch[k]
+                output1 = outputs[i]
+                if output1 == "Passage A":
+                    score_matrix[i, j] = 1
+                    score_matrix[j, i] = 0
+                elif output1 == "Passage B":
+                    score_matrix[i, j] = 0
+                    score_matrix[j, i] = 1
+                else:  # conflict
+                    score_matrix[i, j] = 0.5
+                    score_matrix[j, i] = 0.5
         
-        for i in range(len(doc_text)):
-            for j in range(len(doc_text)):
+        for i in range(len(doc_texts)):
+            for j in range(len(doc_texts)):
                 if score_matrix[i, j] > 0.5 and score_matrix[j, i] < 0.5: score_matrix[i, j], score_matrix[j, i] = 1., 0.
                 elif score_matrix[i, j] < 0.5 and score_matrix[j, i] > 0.5: score_matrix[i, j], score_matrix[j, i] = 0., 1.
                 else: score_matrix[i, j], score_matrix[j, i] = 0.5, 0.5
