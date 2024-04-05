@@ -34,6 +34,7 @@ Output Passage A or Passage B:"""
                  buffer : int = 20, 
                  mode='sliding', 
                  max_iters : int = 100,
+                 max_length : int = 300,
                  **kwargs):
         super().__init__(window_size=window_size, stride=stride, buffer=buffer, mode=mode, max_iters=max_iters, verbose=verbose, **kwargs)
         self.batch_size = batch_size
@@ -53,16 +54,20 @@ Output Passage A or Passage B:"""
                                                            add_special_tokens=False).to(self.model.device)
         self.decoder_input_ids = self.decoder_input_ids.repeat(self.batch_size, 1)
         self.A, self.B = self.tokenizer.encode("A")[0], self.tokenizer.encode("B")[0]
+        self.max_length = max_length
+
+    def _strip(self, doc_text : list):
+        # split by space and truncate to max_length
+        return [" ".join(doc.split()[:self.max_length]) for doc in doc_text]
 
     def score(self, query : str, doc_text : list, **kwargs):
         idx = create_pairs(len(doc_text))
         score_matrix = np.zeros((len(doc_text), len(doc_text)))
+        doc_text = self._strip(doc_text)
         for batch in tqdm(chunked(idx, self.batch_size), unit='batch'):
             self.current_query.inferences += len(batch)
             prompts = [self.template.format(query=query, doc1=doc_text[i], doc2=doc_text[j]) for i, j in batch]
-            inputs = self.tokenizer(prompts,
-                                       padding='longest',
-                                       return_tensors="pt").input_ids.to(self.model.device)
+            inputs = self.tokenizer(prompts, padding='longest', return_tensors="pt").input_ids.to(self.model.device)
             with torch.no_grad():
                 outputs = self.model.generate(inputs, decoder_input_ids=self.decoder_input_ids, max_new_tokens=2)
             outputs = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
