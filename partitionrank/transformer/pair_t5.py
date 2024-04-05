@@ -25,7 +25,7 @@ Passage B: "{doc2}"
 Output Passage A or Passage B:"""
 
     def __init__(self, 
-                 model_path : str = 'castorini/LiT5-Distill-large', 
+                 model_path : str = 'google/flan-t5-xl', 
                  batch_size : int = 16, 
                  verbose : bool = True, 
                  bfloat16 : bool = None, 
