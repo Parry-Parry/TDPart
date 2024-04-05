@@ -4,6 +4,7 @@ if not pt.started(): pt.init()
 import ir_datasets as irds 
 from tqdm.auto import tqdm
 from fire import Fire
+import torch
 from ir_measures import *
 from ir_measures import evaluator
 from typing import Any
@@ -18,6 +19,7 @@ def evaluate(in_path : str, out_path : str, model : Any, dataset : str, pt_datas
     corpus = irds.load(dataset)
     all_qrels = pd.DataFrame(corpus.qrels_iter())
     eval = evaluator([nDCG@10, nDCG@5, nDCG@1], all_qrels)
+    _model = None
 
     output = {
         'iter': [],
@@ -34,6 +36,9 @@ def evaluate(in_path : str, out_path : str, model : Any, dataset : str, pt_datas
     
     progress = tqdm(total=10*3*4)
     for window_len in [5, 10, 20]:
+        if _model is not None:
+            del _model
+            torch.cuda.empty_cache()
         _model = LOAD_FUNCS[model](dataset=pt.get_dataset(pt_dataset), mode=mode, window_size=window_len, cutoff=window_len-1)
         for i in range(10):
             for order in range(3):

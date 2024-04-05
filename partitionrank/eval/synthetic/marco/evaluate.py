@@ -5,6 +5,7 @@ import ir_datasets as irds
 from tqdm.auto import tqdm
 from fire import Fire
 from ir_measures import *
+import torch
 from ir_measures import evaluator
 from typing import Any
 from os.path import join
@@ -17,7 +18,7 @@ def evaluate(in_path : str, out_path : str, model : Any):
         datasets[dataset] = irds.load(dataset)
     all_qrels = pd.concat([pd.DataFrame(ds.qrels_iter()) for ds in datasets.values()])
     eval = evaluator([nDCG@10, nDCG@5, nDCG@1], all_qrels)
-
+    _model = None
     output = {
         'iter': [],
         'ratio': [],
@@ -34,6 +35,9 @@ def evaluate(in_path : str, out_path : str, model : Any):
     
     progress = tqdm(total=10*3*(3*4))
     for window_len in [5, 10, 20]:
+        if _model is not None:
+            del _model
+            torch.cuda.empty_cache()
         _model = LOAD_FUNCS[model](dataset=pt.get_dataset('irds:msmarco-passage'), mode='single', window_size=window_len, cutoff=window_len-1)
         for i in range(10):
             for order in range(3):
