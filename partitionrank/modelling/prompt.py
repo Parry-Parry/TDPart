@@ -54,7 +54,7 @@ class RankPrompt:
             input_context = f"{prefix}\n"
             for text in texts:
                 rank += 1
-                content = " ".join(text.split()[: int(self.max_length)])
+                content = " ".join(text.split()[:int(max_length)])
                 input_context += f"[{rank}] {replace_number(content)}\n"
 
             input_context += self.POST.format(query=query, num=num)
