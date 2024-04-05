@@ -44,6 +44,7 @@ class RankPrompt:
         return output_token_estimate
 
     def __call__(self, query, texts, num, **kwargs) -> str:
+        max_length = self.max_length
         while True:
             conv = get_conversation_template(self.model)
             if self.rankllm:
