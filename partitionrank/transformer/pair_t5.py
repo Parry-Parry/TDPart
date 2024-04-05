@@ -164,7 +164,7 @@ Output Passage A or Passage B:"""
         score_matrix = np.zeros((len(doc_text), len(doc_text)))
         doc_text = self._strip(doc_text)
 
-        for batch in tqdm(chunked(idx, self.batch_size), unit='batch'):
+        for batch in chunked(idx, self.batch_size):
             self.current_query.inferences += len(batch)
             prompts = [self.template.format(query=query, doc1=doc_text[i], doc2=doc_text[j]) for i, j in batch]
             inputs = self.tokenizer(prompts, max_length=512, padding='longest', return_tensors="pt").input_ids.to(self.model.device)
