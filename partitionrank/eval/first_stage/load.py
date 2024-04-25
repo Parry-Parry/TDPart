@@ -45,11 +45,20 @@ def load_bm25(index : str = 'msmarco_passage', **kwargs):
     index = pt.IndexFactory.of(pt.get_dataset(index).get_index('terrier_stemmed'), memory=True)
     return pt.BatchRetrieve(index, wmodel='BM25')
 
+def load_pisa_bm25(index : str, n_threads : int = 4, **kwargs):
+    import pyterrier as pt 
+    if not pt.started(): pt.init()
+    from pyterrier_pisa import PisaIndex
+
+    index = PisaIndex(index, threads=n_threads).quantized()
+    return index.bm25(num_results=100)
+
 LOAD_FUNCS = {
     'monot5': load_monot5,
     'bi_encoder': load_bi_encoder,
     'electra': load_electra,
     'splade': load_splade,
     'bm25': load_bm25,
+    'pisa_bm25': load_pisa_bm25,
     'dr': load_dense_retrieval,
 }

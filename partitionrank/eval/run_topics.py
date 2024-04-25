@@ -26,6 +26,7 @@ def score_model(dataset : str,
                  **kwargs):
     topics_or_res = read_results(topics_or_res)
     ds = irds.load(qrels)
+    dataset = pt.get_dataset(dataset)
     queries = pd.DataFrame(ds.queries_iter()).set_index('query_id').text.to_dict()
     topics_or_res['query'] = topics_or_res['qid'].apply(lambda x: queries[str(x)])
     del queries
