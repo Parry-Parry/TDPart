@@ -76,7 +76,6 @@ class RankedList(object):
                 self.doc_idx[idx], self.doc_texts[idx] = value.doc_idx[i], value.doc_texts[i]
 
     def __add__(self, other):
-        print(type(other))
         if not isinstance(other, RankedList):
             raise TypeError("Unsupported operand type(s) for +: 'RankedList' and '{}'".format(type(other)))
         return RankedList(concat([self.doc_idx, other.doc_idx]), concat([self.doc_texts, other.doc_texts]))
