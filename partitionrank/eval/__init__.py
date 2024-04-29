@@ -28,10 +28,16 @@ def load_oracle(dataset : Any, **model_kwargs):
     from partitionrank.transformer.oracle import OracleTransformer
     return pt.text.get_text(dataset, "text") >> OracleTransformer(qrels, **model_kwargs)
 
+def load_electra(dataset : Any, checkpoint : str ='crystina-z/monoELECTRA_LCE_nneg31', batch_size : int = 64, **kwargs):
+    from pyterrier_dr import ElectraScorer
+    return pt.text.get_text(dataset, "text") >> ElectraScorer(model_name=checkpoint, batch_size=batch_size)
+
 LOAD_FUNCS = {
     'gpt': load_rankgpt,
     'vicuna': load_rankvicuna,
     'zephyr': load_rankzephyr,
     'lit5': load_lit5,
     'pairt5': load_pairt5,
+    'oracle': load_oracle,
+    'electra': load_electra
 }
