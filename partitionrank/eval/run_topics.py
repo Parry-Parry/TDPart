@@ -20,7 +20,6 @@ def score_model(dataset : str,
                  mode : str = 'sliding', 
                  buffer : int = 20, 
                  max_iters : int = 100,
-                 checkpoint : str = None,
                  n_gpu : int = 1,
                  depth : int = 100,
                  **kwargs):
