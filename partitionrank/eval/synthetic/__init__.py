@@ -47,5 +47,8 @@ class Generator(object):
     
     def get_samples(self, qid):
         for ratio in self.ratios:
-            self.current[qid] = pd.concat([self.rel[qid].sample(n=int(ratio*self.num_items), replace=False), self.nrel[qid].sample(n=int((1-ratio)*self.num_items), replace=False)]).reset_index(drop=True)
-            yield self.current[qid]
+            if self.current[qid] is None:
+                self.current[qid] = (self.rel[qid].sample(n=int(ratio*self.num_items), replace=False), self.nrel[qid].sample(n=int((1-ratio)*self.num_items), replace=False))
+                next = self.current[qid]
+            else:
+                curr_rel, curr_nrel = self.current[qid]
