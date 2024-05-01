@@ -50,7 +50,7 @@ class Generator(object):
         for ratio in self.ratios:
             if self.current[qid] is None:
                 self.current[qid] = (self.rel[qid].sample(n=int(ratio*self.num_items), replace=False), self.nrel[qid].sample(n=int((1-ratio)*self.num_items), replace=False))
-                next_samples = self.current[qid]
+                next_samples = pd.concat([*self.current[qid]])
             else:
                 curr_rel, curr_nrel = self.current[qid]
                 num_rel_to_replace = int((ratio-self.prev) * self.num_items)
