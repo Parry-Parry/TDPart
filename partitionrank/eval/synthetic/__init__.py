@@ -35,6 +35,7 @@ class Generator(object):
         self.num_items = num_items
         self.cutoff = cutoff
         self.ratios = ratios
+        self.prev = 0.
 
         default = {qid : None for qid in self.qrels['query_id'].unique()}
         self.current, self.rel, self.nrel = copy.deepcopy(default), copy.deepcopy(default), copy.deepcopy(default)
@@ -52,15 +53,16 @@ class Generator(object):
                 next_samples = self.current[qid]
             else:
                 curr_rel, curr_nrel = self.current[qid]
-                num_rel_to_replace = int(ratio * self.num_items)
+                num_rel_to_replace = int((ratio-self.prev) * self.num_items)
                 num_nrel_to_replace = self.num_items - num_rel_to_replace
-
                 # Drop some of the current non-relevant documents
                 curr_nrel = curr_nrel.iloc[num_nrel_to_replace:]
                 # Add new relevant documents
-                new_rel = self.rel[qid].sample(n=num_rel_to_replace, replace=False)
+                new_rel = self.rel[qid].iloc[:num_rel_to_replace]
+                self.rel[qid] = new_rel
                 next_samples = pd.concat(new_rel, curr_nrel)
-                self.current[qid] = (curr_rel, next_samples)
+                self.current[qid] = (new_rel, next_samples)
+            self.prev = ratio
             yield next_samples, ratio
 
 def sort_df(df, order):
