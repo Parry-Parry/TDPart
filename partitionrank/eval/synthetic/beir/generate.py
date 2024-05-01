@@ -29,7 +29,7 @@ def create_synthetic(dataset : str, out_path : str, n_samples : int = 10, cutoff
             for qid in all_queries.keys():
                 for sample, ratio in generator.get_samples(qid):
                     sample = sample[0]
-                    sample['text'] = sample['docno'].apply(lambda x: all_docs[str(x)])
+                    sample['text'] = sample['doc_id'].apply(lambda x: all_docs[str(x)])
                     sample['query'] = all_queries[qid]
                     for order in range(3):
                         _order = Order(order)
