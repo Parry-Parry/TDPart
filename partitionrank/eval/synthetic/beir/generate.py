@@ -6,7 +6,7 @@ from ir_measures import *
 from os.path import join
 from fire import Fire
 
-from .. import Order, get_sample
+from .. import Order, Generator, sort_df
 
 def create_synthetic(dataset : str, out_path : str, n_samples : int = 10, cutoff : int = 2):
     corpus = irds.load(dataset)
@@ -21,21 +21,31 @@ def create_synthetic(dataset : str, out_path : str, n_samples : int = 10, cutoff
 
     print(f"Number of queries: {len(all_queries)}")
 
-    for i in range(n_samples):
-        for order in range(3):
-            _order = Order(order)
-            for window_len in [5, 10, 20]:
-                for ratio in [0.2, 0.4, 0.6, 0.8]:
+    for window_len in [5, 10, 20]:
+        generator = Generator(all_qrels, window_len, cutoff)
+        for i in range(n_samples):
+            generator.new_sample()
+            df = []
+            for qid in all_queries.keys():
+                for sample, ratio in generator.get_samples(qid):
+                    sample['text'] = sample['docno'].apply(lambda x: all_docs[str(x)])
+                    sample['query'] = all_queries[qid]
+                    for order in range(3):
+                        _order = Order(order)
+                        sample = sort_df(sample, _order)
+                        sample['order'] = _order.name
+                        sample['ratio'] = ratio
+                        df.append(sample)
+            df = pd.concat(df)
+            # split up by ratio and order and dump each to file
+            for ratio in [0.2, 0.4, 0.6, 0.8]:
+                for order in range(3):
+                    _order = Order(order)
                     _ratio = str(ratio).replace('.', '_')
                     output_name = f"{_order.name}.{_ratio}.{window_len}.{i}.tsv.gz"
-                    frame = []
-                    for qid, query in all_queries.items():
-                        sample = get_sample(all_qrels, qid, window_len, order, ratio, cutoff)
-                        sample['text'] = sample['docno'].apply(lambda x: all_docs[str(x)])
-                        sample['query'] = query
-                        frame.append(sample)
-                    frame = pd.concat(frame)
-                    frame.to_csv(join(out_path, output_name), sep='\t', index=False)
+                    df[(df['order'] == _order.name) & (df['ratio'] == ratio)].to_csv(join(out_path, output_name), sep='\t', index=False)
+    
+    return "Done"
 
 if __name__ == '__main__':
     Fire(create_synthetic)
