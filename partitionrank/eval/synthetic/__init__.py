@@ -60,7 +60,7 @@ class Generator(object):
                 # Add new relevant documents
                 new_rel = self.rel[qid].iloc[:num_rel_to_replace]
                 self.rel[qid] = new_rel
-                next_samples = pd.concat(new_rel, curr_nrel)
+                next_samples = pd.concat([curr_nrel, new_rel])
                 self.current[qid] = (new_rel, next_samples)
             self.prev = ratio
             yield next_samples, ratio
