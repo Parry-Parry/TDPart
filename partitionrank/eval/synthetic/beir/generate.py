@@ -19,6 +19,9 @@ def create_synthetic(dataset : str, out_path : str, n_samples : int = 10, cutoff
     all_queries = {qid: query for qid, query in all_queries.items() if len(all_qrels[(all_qrels['query_id'] == qid) & (all_qrels['relevance'] >= cutoff)]) >= 19}
     all_queries = {qid: query for qid, query in all_queries.items() if len(all_qrels[(all_qrels['query_id'] == qid) & (all_qrels['relevance'] < cutoff)]) >= 19}
 
+
+    all_qrels = all_qrels[all_qrels['query_id'].isin(all_queries.keys())]
+
     print(f"Number of queries: {len(all_queries)}")
 
     for window_len in [5, 10, 20]:
