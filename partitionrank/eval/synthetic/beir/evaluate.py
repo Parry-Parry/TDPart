@@ -46,10 +46,10 @@ def evaluate(in_path : str, out_path : str, model : Any, dataset : str, pt_datas
                 for ratio in [0.2, 0.4, 0.6, 0.8]:
                     _ratio = str(ratio).replace('.', '_')
                     input_name = f"{_order.name}.{_ratio}.{window_len}.{i}.tsv.gz"
-                    sample = pd.read_csv(join(in_path, input_name), sep='\t', dtype={'docno': str, 'qid': str})
-                    old_metrics = eval.calc_aggregate(sample.rename(columns={'docno': 'doc_id', 'qid': 'query_id'}))
+                    sample = pd.read_csv(join(in_path, input_name), sep='\t', dtype={'doc_id': str, 'query_id': str})[['query_id', 'doc_id', 'text', 'query']]
+                    old_metrics = eval.calc_aggregate(sample)
                     old_metrics = {str(k) : v for k, v in old_metrics.items()}
-                    rez = _model.transform(sample)
+                    rez = _model.transform(sample.rename(columns={'doc_id': 'docno', 'query_id': 'qid'}))
                     metrics = eval.calc_aggregate(rez.rename(columns={'docno': 'doc_id', 'qid': 'query_id'}))
                     metrics = {str(k) : v for k, v in metrics.items()}
                     output['iter'].append(i)
