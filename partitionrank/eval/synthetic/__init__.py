@@ -101,7 +101,8 @@ class Generator(object):
                 self.current[qid] = (rel_end, nrel_end, ratio)
 
             print(f'qid: {qid}, rel_end: {rel_end}, nrel_end: {nrel_end}')
-
+            print(self.rel_ptr[qid].iloc[:rel_end])
+            print(self.nrel_ptr[qid].iloc[:nrel_end])
             next_samples = pd.concat([
                 self.rel_ptr[qid].iloc[:rel_end],
                 self.nrel_ptr[qid].iloc[:nrel_end]
