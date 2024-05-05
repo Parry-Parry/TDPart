@@ -81,8 +81,8 @@ class Generator(object):
     def new_sample(self):
         for qid in self.qids:
             _qrels = self.qrels[self.qrels['query_id'] == qid]
-            self.nrel_ptr[qid] = _qrels[_qrels['relevance'] < self.cutoff].sample(n=self.num_items-1, replace=False).iloc[0]
-            self.rel_ptr[qid] = _qrels[_qrels['relevance'] >= self.cutoff].sample(n=self.num_items-1, replace=False).iloc[0]
+            self.nrel_ptr[qid] = _qrels[_qrels['relevance'] < self.cutoff].sample(n=self.num_items-1, replace=False)
+            self.rel_ptr[qid] = _qrels[_qrels['relevance'] >= self.cutoff].sample(n=self.num_items-1, replace=False)
 
     def get_samples(self, qid):
         for ratio in self.ratios:
