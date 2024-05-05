@@ -104,7 +104,7 @@ class Generator(object):
                 self.rel_ptr[qid].iloc[:rel_end],
                 self.nrel_ptr[qid].iloc[:nrel_end]
             ])
-            yield next_samples  # Yield the samples instead of returning them
+            yield next_samples, ratio  # Yield the samples instead of returning them
 
 
 
