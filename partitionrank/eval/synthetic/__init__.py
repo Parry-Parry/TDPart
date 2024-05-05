@@ -28,7 +28,7 @@ def get_sample(qrels, qid, num_items : int = 20, order = Order.RANDOM, ratio : i
     qrels['score'] = [i for i in range(num_items)]
     return qrels
 
-class Generator(object):
+class OldGenerator(object):
     def __init__(self, qrels, num_items=20, cutoff=2, ratios=[0.2, 0.4, 0.6, 0.8]):
         self.qrels = qrels
         self.qids = self.qrels['query_id'].unique()
@@ -65,6 +65,48 @@ class Generator(object):
                 self.current[qid] = (new_rel, next_samples)
             self.prev = ratio
             yield next_samples, ratio
+
+class Generator(object):
+    def __init__(self, qrels, num_items=20, cutoff=2, ratios=[0.2, 0.4, 0.6, 0.8]):
+        self.qrels = qrels
+        self.qids = self.qrels['query_id'].unique()
+        self.num_items = num_items
+        self.cutoff = cutoff
+        self.ratios = ratios
+
+        default = {qid: None for qid in self.qrels['query_id'].unique()}
+        self.current, self.rel_ptr, self.nrel_ptr = copy.deepcopy(default), copy.deepcopy(default), copy.deepcopy(default)
+        self.new_sample()
+
+    def new_sample(self):
+        for qid in self.qids:
+            _qrels = self.qrels[self.qrels['query_id'] == qid]
+            self.nrel_ptr[qid] = _qrels[_qrels['relevance'] < self.cutoff].sample(n=self.num_items, replace=False).iloc[0]
+            self.rel_ptr[qid] = _qrels[_qrels['relevance'] >= self.cutoff].sample(n=self.num_items, replace=False).iloc[0]
+
+    def get_samples(self, qid):
+        for ratio in self.ratios:
+            if self.current[qid] is None:
+                # Initialize pointers in the first iteration
+                rel_end = int(ratio * self.num_items)
+                nrel_end = self.num_items - rel_end
+                self.current[qid] = (rel_end, nrel_end, ratio)
+            else:
+                rel_end, nrel_end, prev = self.current[qid]
+
+                new_rel = int((ratio - prev) * self.num_items)
+                rel_end += new_rel 
+                nrel_end -= new_rel
+
+                self.current[qid] = (rel_end, nrel_end, ratio)
+
+            next_samples = pd.concat([
+                self.rel_ptr[qid].iloc[:rel_end],
+                self.nrel_ptr[qid].iloc[:nrel_end]
+            ])
+            yield next_samples  # Yield the samples instead of returning them
+
+
 
 def sort_df(df, order):
     if order == Order.ASC:
