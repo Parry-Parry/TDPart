@@ -28,44 +28,6 @@ def get_sample(qrels, qid, num_items : int = 20, order = Order.RANDOM, ratio : i
     qrels['score'] = [i for i in range(num_items)]
     return qrels
 
-class OldGenerator(object):
-    def __init__(self, qrels, num_items=20, cutoff=2, ratios=[0.2, 0.4, 0.6, 0.8]):
-        self.qrels = qrels
-        self.qids = self.qrels['query_id'].unique()
-        self.num_items = num_items
-        self.cutoff = cutoff
-        self.ratios = ratios
-        self.prev = 0.
-
-        default = {qid : None for qid in self.qrels['query_id'].unique()}
-        self.current, self.rel, self.nrel = copy.deepcopy(default), copy.deepcopy(default), copy.deepcopy(default)
-        self.new_sample()
-
-    def new_sample(self):
-        for qid in self.qids:
-            _qrels = self.qrels[self.qrels['query_id'] == qid]
-            self.nrel[qid] = _qrels[_qrels['relevance'] < self.cutoff].copy().sample(n=self.num_items-1, replace=False)
-            self.rel[qid] = _qrels[_qrels['relevance'] >= self.cutoff].copy().sample(n=self.num_items-1, replace=False)
-
-    def get_samples(self, qid):
-        for ratio in self.ratios:
-            if self.current[qid] is None:
-                self.current[qid] = (self.rel[qid].sample(n=int(ratio*self.num_items), replace=False), self.nrel[qid].sample(n=int((1-ratio)*self.num_items), replace=False))
-                next_samples = pd.concat([*self.current[qid]])
-            else:
-                curr_rel, curr_nrel = self.current[qid]
-                num_rel_to_replace = int((ratio-self.prev) * self.num_items)
-                num_nrel_to_replace = self.num_items - num_rel_to_replace
-                # Drop some of the current non-relevant documents
-                curr_nrel = curr_nrel.iloc[num_nrel_to_replace:]
-                # Add new relevant documents
-                new_rel = self.rel[qid].iloc[:num_rel_to_replace]
-                self.rel[qid] = new_rel
-                next_samples = pd.concat([curr_nrel, new_rel])
-                self.current[qid] = (new_rel, next_samples)
-            self.prev = ratio
-            yield next_samples, ratio
-
 class Generator(object):
     def __init__(self, qrels, num_items=20, cutoff=2, ratios=[0.2, 0.4, 0.6, 0.8]):
         self.qrels = qrels
@@ -74,40 +36,39 @@ class Generator(object):
         self.cutoff = cutoff
         self.ratios = ratios
 
-        default = {qid: None for qid in self.qrels['query_id'].unique()}
+        default = {qid: None for qid in self.qrels['query_id'].unique()} # defaults before first population
         self.current, self.rel_ptr, self.nrel_ptr = copy.deepcopy(default), copy.deepcopy(default), copy.deepcopy(default)
         self.new_sample()
 
     def new_sample(self):
-        for qid in self.qids:
+        for qid in self.qids: # Get a new sample for each query before each iteration
             _qrels = self.qrels[self.qrels['query_id'] == qid]
             self.nrel_ptr[qid] = _qrels[_qrels['relevance'] < self.cutoff].sample(n=self.num_items-1, replace=False)
             self.rel_ptr[qid] = _qrels[_qrels['relevance'] >= self.cutoff].sample(n=self.num_items-1, replace=False)
 
     def get_samples(self, qid):
-        for ratio in self.ratios:
-            if self.current[qid] is None:
+        for ratio in self.ratios: # iterate over the ratios
+            if self.current[qid] is None: # first ratio
                 # Initialize pointers in the first iteration
-                rel_end = int(ratio * self.num_items)
-                nrel_end = self.num_items - rel_end
-                self.current[qid] = (rel_end, nrel_end, ratio)
+                rel_end = int(ratio * self.num_items) # num_relevant is (0, ratio*num_items) 
+                nrel_end = int((1-ratio)*self.num_items) # num_non_relevant is (0, (1-ratio)*num_items)
+                self.current[qid] = (rel_end, nrel_end, ratio) # store the current state
             else:
-                rel_end, nrel_end, prev = self.current[qid]
+                rel_end, nrel_end, prev = self.current[qid] # get the previous state
+                new_rel = int((ratio - prev) * self.num_items) # get the new number of relevant documents
+                rel_end += new_rel # update the number of relevant documents
+                nrel_end -= new_rel # update the number of non-relevant documents
 
-                new_rel = int((ratio - prev) * self.num_items)
-                rel_end += new_rel 
-                nrel_end -= new_rel
-
-                self.current[qid] = (rel_end, nrel_end, ratio)
+                self.current[qid] = (rel_end, nrel_end, ratio) # store the current state
 
             print(f'qid: {qid}, rel_end: {rel_end}, nrel_end: {nrel_end}')
             print(self.rel_ptr[qid].iloc[:rel_end])
             print(self.nrel_ptr[qid].iloc[:nrel_end])
             next_samples = pd.concat([
-                self.rel_ptr[qid].iloc[:rel_end],
-                self.nrel_ptr[qid].iloc[:nrel_end]
+                self.rel_ptr[qid].iloc[:rel_end], # get the relevant documents
+                self.nrel_ptr[qid].iloc[:nrel_end] # get the non-relevant documents
             ])
-            yield next_samples, ratio  # Yield the samples instead of returning them
+            yield next_samples, ratio  # Yield the samples 
 
 
 
