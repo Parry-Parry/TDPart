@@ -338,7 +338,8 @@ class ListWiseTransformer(pt.Transformer, ABC):
             res['query'].extend([query] * len(doc_idx))
             res['docno'].extend(doc_idx)
             res['text'].extend(doc_texts)
-            res['rank'].extend(list(range(len(doc_idx))))
+            score = [-i for i in list(range(1, len(doc_idx)+1))]
+            res['rank'].extend(score)
         res = pd.DataFrame(res)
         res['score'] = -res['rank'].astype(float)
         return res
