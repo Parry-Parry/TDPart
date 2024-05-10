@@ -327,7 +327,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
             'query': [],
             'docno': [],
             'text': [],
-            'rank': [],
+            'score': [],
         }
         progress = not self.verbose
         for (qid, query), query_results in tqdm(inp.groupby(['qid', 'query']), unit='q', disable=progress):
