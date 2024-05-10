@@ -37,7 +37,7 @@ def score_model(dataset : str,
     logging.info(f"Loading {model_type} model")
     pipe = LOAD_FUNCS[model_type](dataset, qrels=pd.DataFrame(ds.qrels_iter()), n_gpu=n_gpu, mode=mode, window_size=window_size, buffer=buffer, stride=stride, max_iters=max_iters, depth=depth, **kwargs)
 
-    res = pt.model.add_ranks(pipe.transform(topics_or_res))
+    res = pipe.transform(topics_or_res)
 
     # write model.log to log_file as a dict json dump
 

@@ -340,5 +340,5 @@ class ListWiseTransformer(pt.Transformer, ABC):
             res['text'].extend(doc_texts)
             score = [-i for i in list(range(1, len(doc_idx)+1))]
             res['score'].extend(score)
-        res = pd.DataFrame(res)
+        res = pt.model.add_ranks(pd.DataFrame(res))
         return res
