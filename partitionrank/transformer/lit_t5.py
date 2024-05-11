@@ -11,7 +11,7 @@ class LiT5(ListWiseTransformer):
     template = "Search Query: {q} Passage: [{i}] {d} Relevance Ranking: "
     def __init__(self, 
                  model_path : str = 'castorini/LiT5-Distill-large', 
-                 batch_size : int = 16, 
+                 batch_size : int = 1, 
                  verbose : bool = True, 
                  bfloat16 : bool = None, 
                  window_size : int = 20, 
