@@ -148,7 +148,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
 
         order = np.array(self.score(**kwargs))
         orig_idxs = np.arange(len(l))
-        l = l[order]
+        l[orig_idxs] = l[order]
         logging.info(f"Initial sort complete for query {qid}, len: {len(l)}")
         if len(l) < self.window_size: 
             logging.info('Breaking out')
