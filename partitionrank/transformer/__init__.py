@@ -148,7 +148,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
 
         order = np.array(self.score(**kwargs))
         orig_idxs = np.arange(len(l))
-        l.doc_idx[orig_idxs], l.doc_texts[orig_idxs],  = l.doc_idx[order], l.doc_texts[order]
+        l = l[order]
         logging.info(f"Initial sort complete for query {qid}, len: {len(l)}")
         if len(l) < self.window_size: 
             logging.info('Breaking out')
@@ -174,7 +174,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
 
             order = np.array(self.score(**kwargs))
             orig_idxs = np.arange(len(l))
-            l[orig_idxs] = l[order]
+            l = l[order]
 
             p_idx = np.where(l.doc_idx == p.doc_idx[0])[0][0] # find index of pivot id
             # add left of pivot to candidates and right of pivot to backfill
