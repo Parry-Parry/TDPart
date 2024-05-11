@@ -43,6 +43,7 @@ class LiT5(ListWiseTransformer):
               window_len : int, 
               **kwargs):
         self.current_query.inferences += 1
+        self.model.encoder.config.n_passages = len(doc_text)
         passages = [self.template.format(q=query, i=i+1, d=text) for i, text in enumerate(doc_text)]
         inputs = self.tokenizer.batch_encode_plus(passages, return_tensors="pt", padding='max_length', max_length=150, truncation=True)
         # get number of tokens in batch
