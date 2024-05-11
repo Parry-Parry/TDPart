@@ -174,7 +174,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
 
             order = np.array(self.score(**kwargs))
             orig_idxs = np.arange(len(l))
-            l = l[order]
+            l[orig_idxs] = l[order]
 
             p_idx = np.where(l.doc_idx == p.doc_idx[0])[0][0] # find index of pivot id
             # add left of pivot to candidates and right of pivot to backfill
@@ -203,7 +203,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
 
         indicator = False
         num_iters = 0
-        c = RankedList(doc_texts, doc_idx)
+        c = RankedList(doc_idx, doc_texts)
         b = RankedList()
 
         while not indicator and num_iters < self.max_iters:
