@@ -343,7 +343,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
             res['score'].extend(score)
             if tmp_i==0:
                 print(f"Query: {query}")
-                print(f"Original ranking: {doc_idx}")
+                print(f"Original ranking: {doc_texts}")
                 tmp_i+=1
         res = pt.model.add_ranks(pd.DataFrame(res))
         return res
