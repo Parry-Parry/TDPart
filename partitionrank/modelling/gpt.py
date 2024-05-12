@@ -166,6 +166,7 @@ class GPTRanker:
     ) -> List[int]:
         while True:
             try:
+                time.sleep(0.3)
                 completion = openai.ChatCompletion.create(
                     *args, **kwargs, timeout=30
                 )
