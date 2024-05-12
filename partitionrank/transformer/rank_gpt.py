@@ -18,5 +18,5 @@ class RankGPT(ListWiseTransformer):
     
     def score(self, query : str, doc_text : List[str], window_len : int, **kwargs):
         self.current_query.inferences += 1
-        order = self.model(query=query, texts=doc_text.tolist(), num=window_len)
+        order = self.model(query=query, texts=doc_text, num=window_len)
         return np.array(order)
