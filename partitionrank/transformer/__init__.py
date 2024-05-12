@@ -223,7 +223,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
         query_results = query_results.sort_values('score', ascending=False)
         doc_idx = query_results['docno'].to_numpy()
         doc_texts = query_results['text'].to_numpy()
-        ranking = RankedList(doc_texts, doc_idx)
+        ranking = RankedList(doc_idx, doc_texts)
         for start_idx, end_idx, window_len in _iter_windows(len(query_results), self.window_size, self.stride):
             kwargs = {
             'qid': qid,
@@ -304,7 +304,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
         query_results = query_results.sort_values('score', ascending=False)
         doc_idx = query_results['docno'].to_numpy()
         doc_texts = query_results['text'].to_numpy()
-        ranking = RankedList(doc_texts, doc_idx)
+        ranking = RankedList(doc_idx, doc_texts)
         n = len(query_results)
         ranked = 0
         # Build max heap
