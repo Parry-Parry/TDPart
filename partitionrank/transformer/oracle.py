@@ -12,7 +12,8 @@ class OracleTransformer(ListWiseTransformer):
                  stride : int = 10, 
                  buffer : int = 20, 
                  mode = 'sliding', 
-                 max_iters : int = 100) -> None:
+                 max_iters : int = 100,
+                 **kwargs) -> None:
         super().__init__(window_size=window_size, stride=stride, buffer=buffer, mode=mode, max_iters=max_iters)
         self.qrels = qrels
     
