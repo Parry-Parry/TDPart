@@ -24,4 +24,4 @@ class OracleTransformer(ListWiseTransformer):
 
         doc_rel = [q_rels[i] for i in doc_idx]
         order = sorted(range(len(doc_rel)), key=lambda k: doc_rel[k], reverse=True)
-        return order
+        return np.array(order)
