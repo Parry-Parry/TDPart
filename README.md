@@ -1,4 +1,4 @@
-# Top Down Partitioning SIGIR 2024
+# Top Down Partitioning for Efficient List-Wise Ranking
 
 ## Structure
 
