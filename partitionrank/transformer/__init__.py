@@ -29,6 +29,8 @@ class QueryLog:
     inferences : int = 0
     in_tokens : int = 0
     out_tokens : int = 0
+    intial_order : List[str] = []
+    iterations : List[List[str]] = []
 
 @dataclass
 class MainLog:
@@ -158,6 +160,8 @@ class ListWiseTransformer(pt.Transformer, ABC):
         b = l[self.cutoff+1:]
         sub_window_size = self.window_size - 1 # account for addition of p
 
+        self.current_query.iterations.append(l.doc_idx.tolist())
+
         while len(c) < self.buffer and len(r) > 0:
             l, r = _split(r, sub_window_size)
             l = p + l
@@ -175,6 +179,8 @@ class ListWiseTransformer(pt.Transformer, ABC):
             order = np.array(self.score(**kwargs))
             orig_idxs = np.arange(len(l))
             l[orig_idxs] = l[order]
+
+            self.current_query.iterations.append(l.doc_idx.tolist())
 
             p_idx = np.where(l.doc_idx == p.doc_idx[0])[0][0] # find index of pivot id
             # add left of pivot to candidates and right of pivot to backfill
@@ -198,6 +204,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
         qid = query_results['qid'].iloc[0]
         self.current_query = QueryLog(qid=qid)
         query_results = query_results.sort_values('score', ascending=False)
+        self.current_query.intial_order = query_results['docno'].to_numpy().tolist()
         doc_idx = query_results['docno'].to_numpy()
         doc_texts = query_results['text'].to_numpy()
 
