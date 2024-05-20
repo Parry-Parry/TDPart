@@ -160,7 +160,7 @@ class ListWiseTransformer(pt.Transformer, ABC):
         b = l[self.cutoff+1:]
         sub_window_size = self.window_size - 1 # account for addition of p
 
-        self.current_query.iterations.append(l.doc_idx.tolist())
+        self.current_query.iterations.append(c.doc_idx.tolist())
 
         while len(c) < self.buffer and len(r) > 0:
             l, r = _split(r, sub_window_size)
@@ -180,11 +180,10 @@ class ListWiseTransformer(pt.Transformer, ABC):
             orig_idxs = np.arange(len(l))
             l[orig_idxs] = l[order]
 
-            self.current_query.iterations.append(l.doc_idx.tolist())
-
             p_idx = np.where(l.doc_idx == p.doc_idx[0])[0][0] # find index of pivot id
             # add left of pivot to candidates and right of pivot to backfill
             c = c + l[:p_idx]
+            self.current_query.iterations.append(c.doc_idx.tolist())
             b = b + l[p_idx+1:]
         
         # we have found no candidates better than p
