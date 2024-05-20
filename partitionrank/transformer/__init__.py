@@ -29,8 +29,8 @@ class QueryLog:
     inferences : int = 0
     in_tokens : int = 0
     out_tokens : int = 0
-    intial_order : List[str] = []
-    iterations : List[List[str]] = []
+    intial_order : List[str] = field(default_factory=list)
+    iterations : List[List[str]] = field(default_factory=list)
 
 @dataclass
 class MainLog:
